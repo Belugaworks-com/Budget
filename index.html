@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}</style>
+<title>Antwerp Household Budget</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a sticky money strip on top (the monthly split), tabs underneath, each tab a single working column of cards. */
+:root{
+  --bg:#eef2f1; --surface:#ffffff; --sunk:#e4eae8; --ink:#13201e; --muted:#5a6a67; --line:#d5dedb;
+  --accent:#0d5c63; --accent-ink:#ffffff; --accent-soft:#d3e8e7;
+  --good:#2b7a4b; --good-soft:#dcefe2; --warn:#a4660d; --warn-soft:#f6e7cc; --bad:#b3342a; --bad-soft:#f7dcd8;
+  --c-fixed:#56707a; --c-debt:#b3342a; --c-save:#2b7a4b; --c-flex:#0d8a92; --c-free:#b9c6c3;
+  --display:"Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e1615; --surface:#152120; --sunk:#1b2a28; --ink:#e3ecea; --muted:#94a7a3; --line:#273835;
+  --accent:#4fb6b5; --accent-ink:#06201f; --accent-soft:#173d3c;
+  --good:#6cc08d; --good-soft:#173628; --warn:#e0a84d; --warn-soft:#3a2c12; --bad:#ef7d72; --bad-soft:#40201c;
+  --c-fixed:#7e98a2; --c-debt:#e0675c; --c-save:#5fb37f; --c-flex:#3fb0b8; --c-free:#3a4b48;
+  color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e1615; --surface:#152120; --sunk:#1b2a28; --ink:#e3ecea; --muted:#94a7a3; --line:#273835;
+  --accent:#4fb6b5; --accent-ink:#06201f; --accent-soft:#173d3c;
+  --good:#6cc08d; --good-soft:#173628; --warn:#e0a84d; --warn-soft:#3a2c12; --bad:#ef7d72; --bad-soft:#40201c;
+  --c-fixed:#7e98a2; --c-debt:#e0675c; --c-save:#5fb37f; --c-flex:#3fb0b8; --c-free:#3a4b48;
+  color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:0 48px}
+.wrap{max-width:1080px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:1.55rem;font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.2rem;font-weight:600}
+h3{font-size:1rem;font-weight:600}
+p{margin:0}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+.label{font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Header */
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px;padding-block:20px 12px}
+.brand small{display:block;color:var(--muted);font-size:.85rem;margin-top:2px}
+.save{font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.save i{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block}
+.save.busy i{background:var(--warn)}
+
+/* Money strip */
+.strip{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:8px 10px;border-bottom:1px solid var(--line)}
+.split{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--sunk)}
+.split div{height:100%;min-width:0;transition:width .3s}
+.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px 12px;margin-top:8px}
+.stat{min-width:0}
+.stat .v{font-family:var(--mono);font-size:1.02rem;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat .k{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:8px;height:8px;border-radius:2px;flex:none}
+.stat.hero .v{color:var(--accent);font-weight:600}
+@media (max-width:760px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* Tabs */
+nav.tabs{display:flex;gap:4px;overflow-x:auto;padding-block:14px 12px;scrollbar-width:none}
+nav.tabs button{border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;font-weight:500;font-size:.9rem}
+nav.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+section.tab{display:grid;gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
+.card > header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 12px;margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:800px){.grid2{grid-template-columns:1fr}}
+
+.banner{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:12px 14px;border-radius:var(--r);background:var(--warn-soft);color:var(--ink);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent)}
+.banner p{flex:1 1 320px}
+
+/* Buttons & inputs */
+.btn{border:1px solid var(--line);background:var(--surface);padding:7px 12px;border-radius:8px;cursor:pointer;font-weight:500;font-size:.88rem}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--bad)}
+.x{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:4px 8px;border-radius:6px}
+.x:hover{color:var(--bad);background:var(--bad-soft)}
+input[type=text],input[type=number],select{width:100%;min-width:0;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg)}
+input[type=number]{font-family:var(--mono);font-variant-numeric:tabular-nums}
+input:hover,select:hover{border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:var(--surface);padding:6px 11px;cursor:pointer;font-size:.85rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.field{display:grid;gap:4px;min-width:0}
+.field > span{font-size:.8rem;color:var(--muted)}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+
+/* Editable rows */
+.rows{display:grid;gap:6px}
+.row{display:grid;gap:8px;align-items:center}
+.row .lab{display:none;font-size:.72rem;color:var(--muted)}
+.rows.costs .row{grid-template-columns:minmax(0,2fr) minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1.2fr) 36px}
+.rows.debts .row{grid-template-columns:minmax(0,2fr) minmax(0,1.1fr) minmax(0,.8fr) minmax(0,1fr) minmax(0,1.2fr) 36px}
+.rowhead{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+@media (max-width:760px){
+  .rowhead{display:none}
+  .rows.costs .row,.rows.debts .row{grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg)}
+  .row .cell{display:grid;gap:2px}
+  .row .lab{display:block}
+  .row .wide{grid-column:1 / -1}
+  .row .x{justify-self:end;grid-column:2}
+}
+
+/* People */
+.people{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.person .top{display:grid;grid-template-columns:minmax(0,1fr) 110px 36px;gap:8px;align-items:center;margin-bottom:12px}
+.months{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.months label{display:grid;gap:2px;font-size:.75rem;color:var(--muted)}
+.bars{display:flex;align-items:flex-end;gap:4px;height:44px;margin-top:12px}
+.bars div{flex:1;background:var(--accent-soft);border-radius:3px 3px 0 0;position:relative;min-height:2px}
+.bars div.low{background:var(--accent)}
+.pstats{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-size:.82rem}
+
+/* Tables */
+.tscroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+tfoot td{font-weight:600;border-top:1px solid var(--line)}
+.meter{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;min-width:60px}
+.meter i{display:block;height:100%;border-radius:3px}
+
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.75rem;font-weight:600;white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.neutral{background:var(--sunk);color:var(--muted)}
+
+/* Plan */
+.target{display:grid;gap:12px}
+.bigdate{font-family:var(--display);font-size:2.2rem;font-weight:700;letter-spacing:-.02em;line-height:1}
+.bigdate small{font-family:var(--body);font-size:.95rem;font-weight:400;color:var(--muted);letter-spacing:0;margin-left:6px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.kv{display:flex;flex-wrap:wrap;gap:6px 22px}
+.kv div{display:grid}
+.kv b{font-family:var(--mono);font-weight:500;font-variant-numeric:tabular-nums}
+.kv span{font-size:.78rem;color:var(--muted)}
+.tips{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.tips li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:10px 12px;border-radius:8px;background:var(--bg)}
+.tips li .pill{margin-top:2px}
+.callout{padding:12px 14px;border-radius:8px;background:var(--bg);border-left:3px solid var(--accent)}
+.callout.bad{border-left-color:var(--bad)}
+.callout.good{border-left-color:var(--good)}
+.flow{display:grid;gap:6px}
+.flow div{display:flex;justify-content:space-between;gap:10px;padding-block:4px;border-bottom:1px dashed var(--line)}
+.flow div:last-child{border-bottom:0;font-weight:600}
+.confirmrow{display:flex;flex-wrap:wrap;gap:8px}
+details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
+.sources{font-size:.82rem;color:var(--muted);display:grid;gap:6px}
+.sources ul{margin:0;padding-left:18px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Antwerp Household Budget</h1>
+      <small>Plan spending around variable income and a debt-free date.</small>
+    </div>
+    <div class="save" id="saveState"><i></i><span>Loading…</span></div>
+  </header>
+
+  <div class="strip" id="strip"></div>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-tab="plan" id="tab-plan">Plan</button>
+    <button role="tab" data-tab="household" id="tab-household">Household &amp; income</button>
+    <button role="tab" data-tab="costs" id="tab-costs">Costs</button>
+    <button role="tab" data-tab="debts" id="tab-debts">Debts</button>
+    <button role="tab" data-tab="antwerp" id="tab-antwerp">Antwerp check</button>
+  </nav>
+
+  <div id="exampleBanner"></div>
+
+  <section class="tab" data-panel="plan" id="panel-plan"></section>
+  <section class="tab" data-panel="household" id="panel-household" hidden></section>
+  <section class="tab" data-panel="costs" id="panel-costs" hidden></section>
+  <section class="tab" data-panel="debts" id="panel-debts" hidden></section>
+  <section class="tab" data-panel="antwerp" id="panel-antwerp" hidden></section>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------- Reference data: Antwerp, 2026 estimates (EUR per month) ---------- */
+const HOUSING = {
+  studio:{label:"Studio", rent:790},
+  "1bed":{label:"1-bedroom flat", rent:960},
+  "2bed":{label:"2-bedroom flat", rent:1160},
+  "3bed":{label:"3-bedroom flat", rent:1400},
+  house:{label:"Terraced house", rent:1550}
+};
+const CATS = {
+  housing:  {label:"Rent / mortgage", kind:"fixed"},
+  energy:   {label:"Gas & electricity", kind:"fixed"},
+  water:    {label:"Water", kind:"fixed"},
+  telecom:  {label:"Internet & mobile", kind:"fixed"},
+  insurance:{label:"Insurance & health fund", kind:"fixed"},
+  childcare:{label:"Childcare & school", kind:"fixed"},
+  transport:{label:"Transport", kind:"fixed"},
+  subs:     {label:"Subscriptions", kind:"fixed"},
+  groceries:{label:"Groceries", kind:"flex"},
+  eatingout:{label:"Eating out & takeaway", kind:"flex"},
+  personal: {label:"Personal care & pharmacy", kind:"flex"},
+  clothing: {label:"Clothing", kind:"flex"},
+  leisure:  {label:"Leisure & going out", kind:"flex"},
+  home:     {label:"Household items", kind:"flex"},
+  other:    {label:"Other", kind:"flex"}
+};
+const FLEX_CATS = ["groceries","eatingout","personal","clothing","leisure","home","other"];
+
+function benchmark(cat, s){
+  const a = adults(s).length || 1, c = kids(s).length, n = a + c;
+  const house = s.housing === "house";
+  switch(cat){
+    case "housing":  return HOUSING[s.housing] ? HOUSING[s.housing].rent : 1160;
+    case "energy":   return Math.round(85 + 32*n + (house ? 45 : 0));
+    case "water":    return Math.round(12 + 8*n);
+    case "telecom":  return Math.round(45 + 20*a + (c ? 10 : 0));
+    case "insurance":return Math.round(25 + 26*a + 8*c + (s.car ? 70 : 0));
+    case "childcare":return 170*c;
+    case "transport":return s.car ? 360 + 35*Math.max(0,a-1) : 36*a + 12*c + 10;
+    case "subs":     return 30;
+    case "groceries":return 290*a + 200*c;
+    case "eatingout":return 80*a + 20*c;
+    case "personal": return 45*a + 25*c;
+    case "clothing": return 60*a + 45*c;
+    case "leisure":  return 110*a + 50*c;
+    case "home":     return 30 + 10*n;
+    case "other":    return 50;
+  }
+  return 0;
+}
+const LEAN = 0.75; // a lean-but-livable flexible budget, as a share of typical
+
+/* ---------- Helpers ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+const esc = v => String(v ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+const fmtE = new Intl.NumberFormat("nl-BE",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+const eur = n => fmtE.format(Math.round(isFinite(n) ? n : 0));
+const num = v => { const n = parseFloat(String(v).replace(",", ".")); return isFinite(n) ? n : 0; };
+const uid = () => Math.random().toString(36).slice(2,9);
+const FREQ = {m:1, q:1/3, y:1/12};
+const monthly = c => num(c.amount) * (FREQ[c.freq] ?? 1);
+const now = new Date();
+function lastMonths(k){
+  const out = [];
+  for(let i=k-1;i>=0;i--){ const d = new Date(now.getFullYear(), now.getMonth()-i, 1); out.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")); }
+  return out;
+}
+const MONTHS = lastMonths(6);
+const mLabel = key => { const [y,m] = key.split("-").map(Number); return new Date(y, m-1, 1).toLocaleDateString("en-GB",{month:"short"}); };
+const futureLabel = months => { const d = new Date(now.getFullYear(), now.getMonth()+months, 1); return d.toLocaleDateString("en-GB",{month:"short", year:"numeric"}); };
+
+/* ---------- Example household (shown until the user replaces it) ---------- */
+function exampleState(){
+  const [m1,m2,m3,m4,m5,m6] = MONTHS;
+  const sam = uid(), jo = uid(), kid = uid();
+  return {
+    v:1, example:true,
+    people:[
+      {id:sam, name:"Sam", kind:"adult", inc:{[m1]:2100,[m2]:2650,[m3]:1800,[m4]:3100,[m5]:2400,[m6]:2250}},
+      {id:jo,  name:"Jo",  kind:"adult", inc:{[m1]:2280,[m2]:2280,[m3]:3950,[m4]:2280,[m5]:2280,[m6]:2310}},
+      {id:kid, name:"Mila",kind:"child", inc:{[m1]:190,[m2]:190,[m3]:190,[m4]:190,[m5]:190,[m6]:190}}
+    ],
+    basis:"lowest", split:"income", housing:"2bed", car:false,
+    bufferMonths:3, bufferHave:600, bufferPct:5,
+    strategy:"avalanche", targetMonths:30, thisMonth:"",
+    costs:[
+      {id:uid(), name:"Rent", cat:"housing", amount:1250, freq:"m", kind:"fixed", owner:"shared"},
+      {id:uid(), name:"Engie advance", cat:"energy", amount:175, freq:"m", kind:"fixed", owner:"shared"},
+      {id:uid(), name:"Water-link", cat:"water", amount:38, freq:"m", kind:"fixed", owner:"shared"},
+      {id:uid(), name:"Internet + 2 SIMs", cat:"telecom", amount:95, freq:"m", kind:"fixed", owner:"shared"},
+      {id:uid(), name:"Health fund + hospital cover", cat:"insurance", amount:65, freq:"m", kind:"fixed", owner:"shared"},
+      {id:uid(), name:"Fire & family insurance", cat:"insurance", amount:290, freq:"y", kind:"fixed", owner:"shared"},
+      {id:uid(), name:"Daycare", cat:"childcare", amount:210, freq:"m", kind:"fixed", owner:"shared"},
+      {id:uid(), name:"De Lijn Omnipas", cat:"transport", amount:399, freq:"y", kind:"fixed", owner:sam},
+      {id:uid(), name:"De Lijn Omnipas", cat:"transport", amount:399, freq:"y", kind:"fixed", owner:jo},
+      {id:uid(), name:"Streaming", cat:"subs", amount:28, freq:"m", kind:"fixed", owner:"shared"},
+      {id:uid(), name:"Groceries", cat:"groceries", amount:840, freq:"m", kind:"flex", owner:"shared"},
+      {id:uid(), name:"Takeaway & cafés", cat:"eatingout", amount:260, freq:"m", kind:"flex", owner:"shared"},
+      {id:uid(), name:"Pharmacy & care", cat:"personal", amount:90, freq:"m", kind:"flex", owner:"shared"},
+      {id:uid(), name:"Clothes", cat:"clothing", amount:120, freq:"m", kind:"flex", owner:"shared"},
+      {id:uid(), name:"Gym & going out", cat:"leisure", amount:150, freq:"m", kind:"flex", owner:sam},
+      {id:uid(), name:"Hobbies", cat:"leisure", amount:90, freq:"m", kind:"flex", owner:jo},
+      {id:uid(), name:"Household bits", cat:"home", amount:60, freq:"m", kind:"flex", owner:"shared"}
+    ],
+    debts:[
+      {id:uid(), name:"Credit card", balance:3200, apr:16.5, min:95, owner:sam},
+      {id:uid(), name:"Personal loan", balance:8500, apr:7.9, min:210, owner:"shared"},
+      {id:uid(), name:"Buy-now-pay-later", balance:640, apr:0, min:80, owner:"shared"},
+      {id:uid(), name:"Overdraft", balance:900, apr:11, min:30, owner:jo}
+    ]
+  };
+}
+function emptyState(){
+  return {v:1, example:false, people:[{id:uid(), name:"Me", kind:"adult", inc:{}}], basis:"lowest", split:"income",
+    housing:"1bed", car:false, bufferMonths:3, bufferHave:0, bufferPct:5, strategy:"avalanche", targetMonths:24, thisMonth:"", costs:[], debts:[]};
+}
+
+let S = exampleState();
+let tab = "plan";
+try { const t = localStorage.getItem("ahb-tab"); if(t) tab = t; } catch(e){}
+if(/^#(plan|household|costs|debts|antwerp)$/.test(location.hash)) tab = location.hash.slice(1);
+
+/* ---------- Core calculations ---------- */
+const adults = s => s.people.filter(p => p.kind !== "child");
+const kids = s => s.people.filter(p => p.kind === "child");
+function incomeValues(p){ return MONTHS.map(m => p.inc && p.inc[m]).filter(v => v !== undefined && v !== "" && v !== null).map(num); }
+function personIncome(p, basis){
+  const v = incomeValues(p); if(!v.length) return 0;
+  if(basis === "lowest") return Math.min(...v);
+  if(basis === "average") return v.reduce((a,b)=>a+b,0)/v.length;
+  // "typical": average of the lowest three months, a middle road
+  const sorted = [...v].sort((a,b)=>a-b).slice(0, Math.min(3, v.length));
+  return sorted.reduce((a,b)=>a+b,0)/sorted.length;
+}
+function variability(p){
+  const v = incomeValues(p); if(v.length < 2) return 0;
+  const mean = v.reduce((a,b)=>a+b,0)/v.length; if(!mean) return 0;
+  const sd = Math.sqrt(v.reduce((a,b)=>a+(b-mean)**2,0)/v.length);
+  return sd/mean;
+}
+
+function simulate(debts, budget, strategy){
+  const ds = debts.filter(d => num(d.balance) > 0).map(d => ({id:d.id, bal:num(d.balance), r:num(d.apr)/1200, min:num(d.min), off:null}));
+  if(!ds.length) return {months:0, interest:0, payoff:{}};
+  let interest = 0, m = 0;
+  while(ds.some(d => d.bal > 0.005) && m < 600){
+    m++;
+    for(const d of ds) if(d.bal > 0){ const i = d.bal*d.r; d.bal += i; interest += i; }
+    let pool = budget;
+    for(const d of ds) if(d.bal > 0){ const p = Math.min(d.min, d.bal, pool); d.bal -= p; pool -= p; }
+    const order = ds.filter(d => d.bal > 0.005).sort(strategy === "snowball" ? (a,b)=>a.bal-b.bal : (a,b)=>(b.r-a.r)||(a.bal-b.bal));
+    for(const d of order){ if(pool <= 0) break; const p = Math.min(pool, d.bal); d.bal -= p; pool -= p; }
+    for(const d of ds) if(d.bal <= 0.005 && d.off === null){ d.bal = 0; d.off = m; }
+  }
+  const payoff = {}; ds.forEach(d => payoff[d.id] = d.off);
+  return {months: ds.some(d => d.off === null) ? Infinity : m, interest, payoff};
+}
+function budgetFor(s, T){
+  const minSum = s.debts.reduce((a,d)=>a+num(d.min),0);
+  const total = s.debts.reduce((a,d)=>a+num(d.balance),0);
+  if(!total) return 0;
+  if(simulate(s.debts, minSum, s.strategy).months <= T) return minSum;
+  let lo = minSum, hi = minSum + total*1.5 + 50;
+  for(let i=0;i<40;i++){ const mid=(lo+hi)/2; if(simulate(s.debts, mid, s.strategy).months <= T) hi = mid; else lo = mid; }
+  return Math.ceil(hi);
+}
+
+function compute(s){
+  const r = {};
+  r.income = s.people.reduce((a,p)=>a+personIncome(p, s.basis),0);
+  r.incomeAvg = s.people.reduce((a,p)=>a+personIncome(p, "average"),0);
+  r.byCat = {}; r.fixed = 0; r.flexNow = 0;
+  for(const c of s.costs){
+    const m = monthly(c);
+    r.byCat[c.cat] = (r.byCat[c.cat]||0) + m;
+    if(c.kind === "fixed") r.fixed += m; else r.flexNow += m;
+  }
+  r.debtTotal = s.debts.reduce((a,d)=>a+num(d.balance),0);
+  r.minSum = s.debts.reduce((a,d)=>a+num(d.min),0);
+  r.minOnly = simulate(s.debts, r.minSum, s.strategy);
+  r.maxT = isFinite(r.minOnly.months) ? Math.max(r.minOnly.months, 3) : 120;
+
+  // Flexible categories we plan caps for
+  const flexCats = new Set(FLEX_CATS);
+  s.costs.forEach(c => { if(c.kind === "flex") flexCats.add(c.cat); });
+  r.flexCats = [...flexCats];
+  r.flexBench = r.flexCats.reduce((a,c)=>a+benchmark(c,s),0);
+  r.leanFloor = r.flexBench * LEAN;
+
+  // Emergency buffer
+  r.essentials = r.fixed + r.minSum + benchmark("groceries", s);
+  r.bufferTarget = Math.round(r.essentials * num(s.bufferMonths));
+  r.bufferGap = Math.max(0, r.bufferTarget - num(s.bufferHave));
+  r.buffer = r.bufferGap > 0 ? Math.min(r.bufferGap, r.income * num(s.bufferPct)/100) : 0;
+
+  // Debt plan
+  const T = Math.min(Math.max(3, num(s.targetMonths) || r.maxT), r.maxT);
+  r.T = T;
+  r.debtBudget = r.debtTotal ? budgetFor(s, T) : 0;
+  r.plan = simulate(s.debts, r.debtBudget, s.strategy);
+  r.extra = Math.max(0, r.debtBudget - r.minSum);
+  r.flexPot = r.income - r.fixed - r.buffer - r.debtBudget;
+  r.unassigned = Math.max(0, r.flexPot - r.flexBench);
+
+  // Fastest realistic payoff: keeps flexible spending at the lean floor
+  r.fastest = null;
+  if(r.debtTotal && isFinite(r.minOnly.months)){
+    const room = r.income - r.fixed - r.buffer - r.leanFloor;
+    if(room >= r.minSum){
+      let lo = 1, hi = r.maxT;
+      while(lo < hi){ const mid = (lo+hi)>>1; if(budgetFor(s, mid) <= room) hi = mid; else lo = mid+1; }
+      r.fastest = lo;
+    }
+  }
+
+  // Caps per flexible category, proportional to what Antwerp households typically spend
+  const scale = r.flexBench ? Math.max(0, Math.min(1, r.flexPot / r.flexBench)) : 0;
+  r.caps = r.flexCats.map(c => ({cat:c, cap:benchmark(c,s)*scale, now:r.byCat[c]||0, bench:benchmark(c,s)}));
+  r.status = r.flexPot < 0 ? "bad" : r.flexPot < r.leanFloor ? "warn" : "good";
+  return r;
+}
+
+function monthsSooner(s, r, extraPerMonth){
+  if(!r.debtTotal || extraPerMonth <= 0) return 0;
+  const faster = simulate(s.debts, r.debtBudget + extraPerMonth, s.strategy);
+  return isFinite(r.plan.months) && isFinite(faster.months) ? r.plan.months - faster.months : 0;
+}
+
+/* ---------- Per-person split ---------- */
+function perPerson(s, r){
+  const ad = adults(s);
+  const incomes = Object.fromEntries(s.people.map(p => [p.id, personIncome(p, s.basis)]));
+  const adultTotal = ad.reduce((a,p)=>a+incomes[p.id],0);
+  const kidIncome = kids(s).reduce((a,p)=>a+incomes[p.id],0);
+  const sharedCosts = s.costs.filter(c => c.owner === "shared" || !ad.some(p=>p.id===c.owner)).reduce((a,c)=>a+monthly(c),0);
+  const sharedMins = s.debts.filter(d => d.owner === "shared" || !ad.some(p=>p.id===d.owner)).reduce((a,d)=>a+num(d.min),0);
+  const joint = Math.max(0, sharedCosts + sharedMins + r.extra + r.buffer - kidIncome);
+  return {joint, sharedCosts, kidIncome, rows: ad.map(p => {
+    const share = s.split === "equal" || !adultTotal ? 1/ad.length : incomes[p.id]/adultTotal;
+    const own = s.costs.filter(c => c.owner === p.id).reduce((a,c)=>a+monthly(c),0);
+    const ownDebt = s.debts.filter(d => d.owner === p.id).reduce((a,d)=>a+num(d.min),0);
+    const transfer = joint*share;
+    return {p, income:incomes[p.id], share, own, ownDebt, transfer, left: incomes[p.id] - own - ownDebt - transfer};
+  })};
+}
+
+/* ---------- Advice ---------- */
+function advice(s, r){
+  const out = [];
+  const rent = r.byCat.housing || 0;
+  if(rent && r.income){
+    const share = rent / r.income;
+    if(share > 0.4) out.push(["bad", `Rent takes ${Math.round(share*100)}% of your safe income. Belgian lenders and budget counsellors use about one third as the ceiling. In Antwerp a ${HOUSING[s.housing]?.label.toLowerCase() || "similar home"} typically rents for about ${eur(benchmark("housing",s))}.`]);
+    else if(share > 0.33) out.push(["warn", `Rent is ${Math.round(share*100)}% of your safe income, a little above the one-third guideline.`]);
+  }
+  if(r.debtTotal && num(s.bufferHave) < 1000){
+    out.push(["warn", `Your emergency buffer is ${eur(num(s.bufferHave))}. Get it to about €1,000 before paying extra on debt, so a broken boiler or a slow month doesn't go on the credit card.`]);
+  }
+  const over = r.caps.filter(c => c.now > c.cap + 5).sort((a,b)=>(b.now-b.cap)-(a.now-a.cap));
+  over.slice(0,3).forEach(c => {
+    const diff = c.now - c.cap, sooner = monthsSooner(s, r, Math.max(0, c.now - c.bench));
+    const vsBench = c.now > c.bench*1.15 ? ` That is ${Math.round((c.now/c.bench-1)*100)}% above a typical Antwerp household like yours (${eur(c.bench)}).` : "";
+    out.push([c.now > c.bench*1.15 ? "bad" : "warn", `${CATS[c.cat]?.label || c.cat}: you spend ${eur(c.now)} but the plan allows ${eur(c.cap)}, so cut about ${eur(diff)}/month.${vsBench}${sooner>0 ? ` Just matching the typical level would make you debt-free ${sooner} month${sooner>1?"s":""} sooner.`:""}`]);
+  });
+  const highApr = s.debts.filter(d => num(d.apr) >= 12 && num(d.balance) > 0);
+  if(highApr.length) out.push(["warn", `${highApr.map(d=>esc(d.name)).join(", ")} charge${highApr.length>1?"":"s"} ${highApr.length>1?"12% or more":num(highApr[0].apr)+"%"} interest. ${s.strategy==="avalanche"?"The plan already targets the highest rate first.":"Switching to the avalanche order would save interest."}`]);
+  const vol = s.people.filter(p => variability(p) > 0.12);
+  if(vol.length && s.basis === "average") out.push(["warn", `${vol.map(p=>esc(p.name)).join(" and ")}'s income swings a lot. Planning on the average means some months won't cover the plan. Switch the basis to "Lowest month" and treat anything above it as a bonus.`]);
+  if(vol.length && s.basis !== "average") out.push(["good", `Income varies, so the plan is built on ${s.basis==="lowest"?"your lowest recent month":"your leaner months"}. In a better month, use the "This month" box below to split the extra between buffer and debt.`]);
+  if(r.unassigned > 20) out.push(["good", `${eur(r.unassigned)}/month is left after typical Antwerp spending. Move the debt target earlier or raise the buffer percentage to use it.`]);
+  if(r.flexPot < 0) out.push(["bad", `This target needs ${eur(-r.flexPot)} more per month than you have. Pick a later date${r.fastest?` (the fastest realistic is ${r.fastest} months)`:""} or lower fixed costs.`]);
+  if(!out.length) out.push(["good","The plan fits. Keep flexible spending under the caps and check back when income changes."]);
+  return out;
+}
+
+/* ---------- Rendering ---------- */
+const catOptions = sel => Object.entries(CATS).map(([k,v]) => `<option value="${k}"${k===sel?" selected":""}>${esc(v.label)}</option>`).join("");
+const ownerOptions = sel => `<option value="shared"${sel==="shared"?" selected":""}>Shared</option>` + adults(S).map(p => `<option value="${p.id}"${p.id===sel?" selected":""}>${esc(p.name||"Unnamed")}</option>`).join("");
+const pill = (k, t) => `<span class="pill ${k}">${esc(t)}</span>`;
+function compare(now, bench){
+  if(!bench && !now) return pill("neutral","n/a");
+  if(!bench) return pill("warn","not typical");
+  const q = now/bench;
+  if(q > 1.15) return pill("bad", `${Math.round((q-1)*100)}% above`);
+  if(q < 0.85) return pill("good", `${Math.round((1-q)*100)}% below`);
+  return pill("neutral","typical");
+}
+
+function renderStrip(r){
+  const inc = Math.max(r.income, 1);
+  const parts = [
+    ["Fixed costs", r.fixed, "--c-fixed"],
+    ["Debt payments", r.debtBudget, "--c-debt"],
+    ["Set aside", r.buffer, "--c-save"],
+    ["Flexible", Math.max(0, r.flexPot), "--c-flex"]
+  ];
+  const bar = parts.map(([k,v,c]) => `<div title="${k}: ${eur(v)}" style="width:${Math.max(0,v)/Math.max(inc, r.fixed+r.debtBudget+r.buffer)*100}%;background:var(${c})"></div>`).join("");
+  const free = isFinite(r.plan.months) ? (r.debtTotal ? futureLabel(r.plan.months) : "No debt") : "Never at this rate";
+  $("#strip").innerHTML = `<div class="split" role="img" aria-label="How safe monthly income is split">${bar}</div>
+  <div class="stats">
+    <div class="stat"><div class="v">${eur(r.income)}</div><div class="k">Safe income</div></div>
+    ${parts.map(([k,v,c]) => `<div class="stat"><div class="v"${k==="Flexible"&&r.flexPot<0?' style="color:var(--bad)"':""}>${eur(k==="Flexible"?r.flexPot:v)}</div><div class="k"><span class="dot" style="background:var(${c})"></span>${k}</div></div>`).join("")}
+    <div class="stat hero"><div class="v">${free}</div><div class="k">Debt-free</div></div>
+  </div>`;
+}
+
+function renderBanner(){
+  $("#exampleBanner").innerHTML = S.example ? `<div class="banner"><p><b>These are example figures</b> for a two-adult, one-child household. Edit them into your own, or clear them and start from scratch.</p>
+    <div class="confirmrow"><button class="btn" id="keepExample">Edit these</button><button class="btn primary" id="startEmpty">Start empty</button></div></div>` : "";
+}
+
+/* Plan tab */
+function renderPlan(){
+  $("#panel-plan").innerHTML = `
+  <div class="grid2">
+    <div class="card target">
+      <header><h2>Debt-free target</h2>
+        <div class="seg" role="group" aria-label="Payoff order">
+          <button data-set="strategy" data-val="avalanche" aria-pressed="${S.strategy==="avalanche"}" id="st-av">Highest interest first</button>
+          <button data-set="strategy" data-val="snowball" aria-pressed="${S.strategy==="snowball"}" id="st-sn">Smallest balance first</button>
+        </div>
+      </header>
+      <div id="planTarget"></div>
+      <input type="range" id="targetRange" min="3" step="1" aria-label="Months until debt-free">
+      <div class="small muted" id="rangeHint"></div>
+    </div>
+    <div class="card">
+      <header><h2>Where each euro goes</h2><span class="small muted" id="basisNote"></span></header>
+      <div class="flow" id="planFlow"></div>
+    </div>
+  </div>
+  <div class="card">
+    <header><h2>What you can spend</h2><span class="small muted">Monthly caps for flexible spending, weighted like a typical Antwerp household</span></header>
+    <div class="tscroll"><table>
+      <thead><tr><th>Category</th><th class="n">Cap / month</th><th class="n">Per week</th><th class="n">You spend now</th><th style="min-width:90px"></th><th>Status</th></tr></thead>
+      <tbody id="capRows"></tbody><tfoot id="capFoot"></tfoot></table></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><header><h2>Suggestions</h2></header><ul class="tips" id="tips"></ul></div>
+    <div class="card">
+      <header><h2>This month</h2><span class="small muted">For variable income</span></header>
+      <label class="field"><span>Total household income that came in this month (€)</span>
+        <input type="number" inputmode="decimal" id="thisMonth" value="${esc(S.thisMonth)}" placeholder="e.g. 5200"></label>
+      <div id="thisMonthOut" style="margin-top:12px"></div>
+    </div>
+  </div>
+  <div class="card"><header><h2>Who pays what</h2>
+    <div class="seg" role="group" aria-label="Split shared costs">
+      <button data-set="split" data-val="income" aria-pressed="${S.split==="income"}" id="sp-in">Split by income</button>
+      <button data-set="split" data-val="equal" aria-pressed="${S.split==="equal"}" id="sp-eq">Split equally</button>
+    </div></header>
+    <div class="tscroll"><table><thead><tr><th>Person</th><th class="n">Safe income</th><th class="n">Own costs</th><th class="n">Own debt minimums</th><th class="n">To joint account</th><th class="n">Left for personal</th></tr></thead><tbody id="ppRows"></tbody></table></div>
+    <p class="small muted" style="margin-top:10px" id="ppNote"></p>
+  </div>`;
+}
+function derivePlan(r){
+  if(!$("#planTarget")) return;
+  const range = $("#targetRange");
+  range.max = r.maxT; if(document.activeElement !== range) range.value = r.T;
+  range.disabled = !r.debtTotal;
+  if(!r.debtTotal){
+    $("#planTarget").innerHTML = `<div class="bigdate">No debt</div><p class="muted">Add debts on the Debts tab to plan a payoff.</p>`;
+    $("#rangeHint").textContent = "";
+  } else {
+    const minOnlyTxt = isFinite(r.minOnly.months) ? `${r.minOnly.months} months paying only minimums` : "minimum payments never clear it";
+    const saved = isFinite(r.minOnly.months) ? r.minOnly.interest - r.plan.interest : 0;
+    $("#planTarget").innerHTML = `<div class="bigdate">${futureLabel(r.plan.months)}<small>${r.plan.months} month${r.plan.months>1?"s":""}</small></div>
+      <div class="kv">
+        <div><b>${eur(r.debtBudget)}</b><span>on debt per month</span></div>
+        <div><b>${eur(r.extra)}</b><span>above minimums</span></div>
+        <div><b>${eur(r.plan.interest)}</b><span>interest to pay</span></div>
+        ${saved>1?`<div><b style="color:var(--good)">${eur(saved)}</b><span>interest saved</span></div>`:""}
+      </div>
+      ${r.status==="bad" ? `<div class="callout bad">This date needs ${eur(-r.flexPot)} a month more than you have after fixed costs.${r.fastest?` The fastest realistic date is <b>${futureLabel(r.fastest)}</b> (${r.fastest} months).`:" Even minimum payments don't fit; see Suggestions."}</div>`
+        : r.status==="warn" ? `<div class="callout">Tight: flexible spending would be below a lean Antwerp budget (${eur(r.leanFloor)}). Hard to keep up for long.</div>` : ""}
+      ${r.fastest && r.fastest !== r.T ? `<button class="btn" id="useFastest">Use fastest realistic: ${r.fastest} months</button>` : ""}`;
+    $("#rangeHint").textContent = `Drag to trade spending for speed. Right end: ${minOnlyTxt}.`;
+  }
+  $("#basisNote").textContent = {lowest:"Based on your lowest recent month", typical:"Based on your leaner months", average:"Based on average income"}[S.basis];
+  $("#planFlow").innerHTML = `
+    <div><span>Safe monthly income</span><span class="num">${eur(r.income)}</span></div>
+    <div><span>− Fixed costs</span><span class="num">${eur(r.fixed)}</span></div>
+    <div><span>− Debt payments</span><span class="num">${eur(r.debtBudget)}</span></div>
+    <div><span>− Emergency buffer${r.bufferGap>0?` (${eur(num(S.bufferHave))} of ${eur(r.bufferTarget)})`:" (full)"}</span><span class="num">${eur(r.buffer)}</span></div>
+    <div><span>= Flexible spending</span><span class="num" style="color:var(${r.flexPot<0?"--bad":"--ink"})">${eur(r.flexPot)}</span></div>`;
+
+  let totCap = 0, totNow = 0;
+  $("#capRows").innerHTML = r.caps.map(c => {
+    totCap += c.cap; totNow += c.now;
+    const q = c.cap ? c.now/c.cap : (c.now?2:0);
+    const k = q > 1.05 ? "bad" : q > 0.9 ? "warn" : "good";
+    return `<tr><td>${esc(CATS[c.cat]?.label || c.cat)}</td><td class="n"><b>${eur(c.cap)}</b></td><td class="n muted">${eur(c.cap*12/52)}</td><td class="n">${eur(c.now)}</td>
+      <td><div class="meter"><i style="width:${Math.min(100,q*100)}%;background:var(--${k})"></i></div></td>
+      <td>${c.now===0?pill("neutral","nothing logged"):q>1.05?pill("bad",`${eur(c.now-c.cap)} over`):pill("good",`${eur(c.cap-c.now)} spare`)}</td></tr>`;
+  }).join("");
+  $("#capFoot").innerHTML = `<tr><td>Total</td><td class="n">${eur(totCap)}</td><td class="n muted">${eur(totCap*12/52)}</td><td class="n">${eur(totNow)}</td><td></td><td>${r.unassigned>0?pill("good",`${eur(r.unassigned)} unassigned`):""}</td></tr>`;
+
+  $("#tips").innerHTML = advice(S, r).map(([k,t]) => `<li>${pill(k, k==="bad"?"Act":k==="warn"?"Watch":"Good")}<span>${t}</span></li>`).join("");
+
+  const tm = num(S.thisMonth), out = $("#thisMonthOut");
+  if(!S.thisMonth){ out.innerHTML = `<p class="small muted">Enter what actually arrived, including holiday pay (vakantiegeld) or an end-of-year bonus. The plan tells you what to do with the difference.</p>`; }
+  else {
+    const diff = tm - r.income;
+    if(diff >= 0){
+      const toBuf = r.bufferGap > 0 ? Math.min(r.bufferGap, diff/2) : 0;
+      const toDebt = r.debtTotal ? diff - toBuf : 0;
+      out.innerHTML = `<div class="callout good"><b>${eur(diff)} above your safe income.</b> Spend the plan as normal, then move the extra:</div>
+        <div class="flow" style="margin-top:8px">
+          ${toBuf>0?`<div><span>To emergency buffer</span><span class="num">${eur(toBuf)}</span></div>`:""}
+          ${toDebt>0?`<div><span>Extra payment on ${esc(nextTarget(S)?.name || "debt")}</span><span class="num">${eur(toDebt)}</span></div>`:""}
+          ${!r.debtTotal?`<div><span>To savings</span><span class="num">${eur(diff-toBuf)}</span></div>`:""}
+        </div>`;
+    } else {
+      const fromBuf = Math.min(-diff, num(S.bufferHave));
+      out.innerHTML = `<div class="callout bad"><b>${eur(-diff)} short of your safe income.</b> Pay fixed costs and debt minimums first.
+        ${fromBuf>0?` Take up to ${eur(fromBuf)} from the buffer`:" The buffer is empty, so"} ${-diff>fromBuf?`and trim flexible spending by ${eur(-diff-fromBuf)} this month`:"to cover the gap"}. Pause the extra ${eur(r.extra)} debt payment this month if needed.</div>`;
+    }
+  }
+
+  const pp = perPerson(S, r);
+  $("#ppRows").innerHTML = pp.rows.map(x => `<tr><td>${esc(x.p.name||"Unnamed")} <span class="muted small">${Math.round(x.share*100)}%</span></td>
+    <td class="n">${eur(x.income)}</td><td class="n">${eur(x.own)}</td><td class="n">${eur(x.ownDebt)}</td><td class="n"><b>${eur(x.transfer)}</b></td>
+    <td class="n" style="color:var(${x.left<0?"--bad":"--ink"})">${eur(x.left)}</td></tr>`).join("") || `<tr><td colspan="6" class="muted">Add an adult on the Household tab.</td></tr>`;
+  $("#ppNote").textContent = `The joint account needs ${eur(pp.joint)} a month: shared costs (${eur(pp.sharedCosts)}), shared debt minimums, the extra debt payment and the buffer${pp.kidIncome?`, minus ${eur(pp.kidIncome)} child benefit`:""}. "Left for personal" is before any shared flexible spending caps.`;
+}
+function nextTarget(s){
+  const live = s.debts.filter(d => num(d.balance) > 0);
+  return live.sort(s.strategy === "snowball" ? (a,b)=>num(a.balance)-num(b.balance) : (a,b)=>num(b.apr)-num(a.apr))[0];
+}
+
+/* Household tab */
+function renderHousehold(){
+  $("#panel-household").innerHTML = `
+  <div class="card">
+    <header><h2>Planning settings</h2></header>
+    <div class="fields">
+      <label class="field"><span>Plan income on</span><select id="basis" data-set="basis">
+        <option value="lowest"${S.basis==="lowest"?" selected":""}>Lowest recent month (safest)</option>
+        <option value="typical"${S.basis==="typical"?" selected":""}>Average of 3 leanest months</option>
+        <option value="average"${S.basis==="average"?" selected":""}>6-month average</option></select></label>
+      <label class="field"><span>Home</span><select id="housing" data-set="housing">
+        ${Object.entries(HOUSING).map(([k,v])=>`<option value="${k}"${S.housing===k?" selected":""}>${v.label}</option>`).join("")}</select></label>
+      <label class="field"><span>Car in the household</span><select id="car" data-set="car">
+        <option value="no"${!S.car?" selected":""}>No car</option><option value="yes"${S.car?" selected":""}>Yes</option></select></label>
+      <label class="field"><span>Emergency buffer target (months)</span><input type="number" id="bufferMonths" data-set="bufferMonths" min="0" step="1" value="${esc(S.bufferMonths)}"></label>
+      <label class="field"><span>Buffer saved so far (€)</span><input type="number" id="bufferHave" data-set="bufferHave" min="0" value="${esc(S.bufferHave)}"></label>
+      <label class="field"><span>Set aside while building it (% of income)</span><input type="number" id="bufferPct" data-set="bufferPct" min="0" max="50" value="${esc(S.bufferPct)}"></label>
+    </div>
+  </div>
+  <div class="people">
+    ${S.people.map(p => `<div class="card person" data-pid="${p.id}">
+      <div class="top">
+        <input type="text" id="pn-${p.id}" data-list="people" data-id="${p.id}" data-field="name" value="${esc(p.name)}" aria-label="Name" data-rerender>
+        <select id="pk-${p.id}" data-list="people" data-id="${p.id}" data-field="kind" aria-label="Adult or child" data-rerender>
+          <option value="adult"${p.kind!=="child"?" selected":""}>Adult</option><option value="child"${p.kind==="child"?" selected":""}>Child</option></select>
+        <button class="x" data-remove="people" data-id="${p.id}" aria-label="Remove ${esc(p.name)}" ${S.people.length<2?"disabled":""}>×</button>
+      </div>
+      <div class="label" style="margin-bottom:6px">${p.kind==="child"?"Child benefit (Groeipakket) per month":"Net income received"}</div>
+      <div class="months">${MONTHS.map(m => `<label>${mLabel(m)}<input type="number" inputmode="decimal" id="inc-${p.id}-${m}" data-list="people" data-id="${p.id}" data-field="inc:${m}" value="${esc(p.inc?.[m] ?? "")}" placeholder="0"></label>`).join("")}</div>
+      <div class="bars" id="bars-${p.id}"></div>
+      <div class="pstats" id="ps-${p.id}"></div>
+    </div>`).join("")}
+  </div>
+  <div><button class="btn" id="addPerson">+ Add person</button></div>
+  <p class="small muted">Enter net pay as it hit your account. For freelance or shift income, fill every month you have. The planner uses the basis above so a bad month doesn't break the plan. Holiday pay (June) and end-of-year bonus (December) will push a month up; with the safest basis those extras go to debt instead of everyday spending.</p>`;
+}
+function deriveHousehold(){
+  for(const p of S.people){
+    const bars = $("#bars-"+p.id); if(!bars) continue;
+    const vals = MONTHS.map(m => num(p.inc?.[m]));
+    const max = Math.max(...vals, 1), min = Math.min(...vals.filter(v=>v>0));
+    bars.innerHTML = vals.map((v,i) => `<div class="${v===min&&v>0?"low":""}" style="height:${v/max*100}%" title="${mLabel(MONTHS[i])}: ${eur(v)}"></div>`).join("");
+    const cv = variability(p);
+    $("#ps-"+p.id).innerHTML = incomeValues(p).length ? `<span>Plan uses <b class="num">${eur(personIncome(p,S.basis))}</b></span><span class="muted">avg ${eur(personIncome(p,"average"))}</span>
+      ${cv>0.12?pill("warn","varies a lot"):cv>0.04?pill("neutral","varies a little"):pill("good","steady")}` : `<span class="muted">No income entered</span>`;
+  }
+}
+
+/* Costs tab */
+function renderCosts(){
+  $("#panel-costs").innerHTML = `
+  <div class="card">
+    <header><h2>Costs</h2><span class="small muted">Fixed = the bill is the same every month. Flexible = you control how much.</span></header>
+    <div class="rows costs">
+      <div class="row rowhead"><span>What</span><span>Category</span><span>Amount</span><span>Every</span><span>Type</span><span>Paid by</span><span></span></div>
+      ${S.costs.map(c => `<div class="row">
+        <label class="cell wide"><span class="lab">What</span><input type="text" id="cn-${c.id}" data-list="costs" data-id="${c.id}" data-field="name" value="${esc(c.name)}" placeholder="Name"></label>
+        <label class="cell wide"><span class="lab">Category</span><select id="cc-${c.id}" data-list="costs" data-id="${c.id}" data-field="cat">${catOptions(c.cat)}</select></label>
+        <label class="cell"><span class="lab">Amount (€)</span><input type="number" inputmode="decimal" id="ca-${c.id}" data-list="costs" data-id="${c.id}" data-field="amount" value="${esc(c.amount)}"></label>
+        <label class="cell"><span class="lab">Every</span><select id="cf-${c.id}" data-list="costs" data-id="${c.id}" data-field="freq">
+          <option value="m"${c.freq==="m"?" selected":""}>month</option><option value="q"${c.freq==="q"?" selected":""}>quarter</option><option value="y"${c.freq==="y"?" selected":""}>year</option></select></label>
+        <label class="cell"><span class="lab">Type</span><select id="ck-${c.id}" data-list="costs" data-id="${c.id}" data-field="kind">
+          <option value="fixed"${c.kind==="fixed"?" selected":""}>Fixed</option><option value="flex"${c.kind==="flex"?" selected":""}>Flexible</option></select></label>
+        <label class="cell"><span class="lab">Paid by</span><select id="co-${c.id}" data-list="costs" data-id="${c.id}" data-field="owner">${ownerOptions(c.owner)}</select></label>
+        <button class="x" data-remove="costs" data-id="${c.id}" aria-label="Remove ${esc(c.name)}">×</button>
+      </div>`).join("") || `<p class="muted">No costs yet. Start with rent, energy and groceries.</p>`}
+    </div>
+    <div style="margin-top:12px" class="confirmrow"><button class="btn primary" id="addCost">+ Add cost</button></div>
+  </div>
+  <div class="card"><header><h2>Monthly totals</h2><span class="small muted">Yearly and quarterly bills converted to a monthly amount to set aside</span></header>
+    <div class="tscroll"><table><thead><tr><th>Category</th><th class="n">Shared</th>${adults(S).map(p=>`<th class="n">${esc(p.name)}</th>`).join("")}<th class="n">Total</th></tr></thead><tbody id="costTotals"></tbody></table></div>
+  </div>`;
+}
+function deriveCosts(){
+  const tb = $("#costTotals"); if(!tb) return;
+  const ad = adults(S);
+  const cats = Object.keys(CATS).filter(k => S.costs.some(c => c.cat === k));
+  const cell = (k, owner) => S.costs.filter(c => c.cat===k && (owner==="shared" ? (c.owner==="shared" || !ad.some(p=>p.id===c.owner)) : c.owner===owner)).reduce((a,c)=>a+monthly(c),0);
+  let rows = cats.map(k => `<tr><td>${esc(CATS[k].label)}</td><td class="n">${eur(cell(k,"shared"))}</td>${ad.map(p=>`<td class="n">${eur(cell(k,p.id))}</td>`).join("")}<td class="n"><b>${eur(cats.length?cell(k,"shared")+ad.reduce((a,p)=>a+cell(k,p.id),0):0)}</b></td></tr>`).join("");
+  const total = S.costs.reduce((a,c)=>a+monthly(c),0);
+  rows += `<tr><td><b>All costs</b></td><td class="n"></td>${ad.map(()=>`<td></td>`).join("")}<td class="n"><b>${eur(total)}</b></td></tr>`;
+  tb.innerHTML = rows;
+}
+
+/* Debts tab */
+function renderDebts(){
+  $("#panel-debts").innerHTML = `
+  <div class="card">
+    <header><h2>Debts</h2><span class="small muted">Balance today, yearly interest rate (JKP/TAEG) and the minimum monthly payment</span></header>
+    <div class="rows debts">
+      <div class="row rowhead"><span>Debt</span><span>Balance</span><span>Rate %</span><span>Minimum</span><span>Whose</span><span></span></div>
+      ${S.debts.map(d => `<div class="row">
+        <label class="cell wide"><span class="lab">Debt</span><input type="text" id="dn-${d.id}" data-list="debts" data-id="${d.id}" data-field="name" value="${esc(d.name)}" placeholder="Name"></label>
+        <label class="cell"><span class="lab">Balance (€)</span><input type="number" inputmode="decimal" id="db-${d.id}" data-list="debts" data-id="${d.id}" data-field="balance" value="${esc(d.balance)}"></label>
+        <label class="cell"><span class="lab">Rate %</span><input type="number" inputmode="decimal" step="0.1" id="dr-${d.id}" data-list="debts" data-id="${d.id}" data-field="apr" value="${esc(d.apr)}"></label>
+        <label class="cell"><span class="lab">Minimum (€)</span><input type="number" inputmode="decimal" id="dm-${d.id}" data-list="debts" data-id="${d.id}" data-field="min" value="${esc(d.min)}"></label>
+        <label class="cell"><span class="lab">Whose</span><select id="do-${d.id}" data-list="debts" data-id="${d.id}" data-field="owner">${ownerOptions(d.owner)}</select></label>
+        <button class="x" data-remove="debts" data-id="${d.id}" aria-label="Remove ${esc(d.name)}">×</button>
+      </div>`).join("") || `<p class="muted">No debts. The plan will put everything toward your buffer and spending.</p>`}
+    </div>
+    <div style="margin-top:12px"><button class="btn primary" id="addDebt">+ Add debt</button></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><header><h2>Payoff order</h2><span class="small muted" id="orderNote"></span></header>
+      <div class="tscroll"><table><thead><tr><th>#</th><th>Debt</th><th class="n">Balance</th><th class="n">Rate</th><th class="n">Paid off</th></tr></thead><tbody id="orderRows"></tbody></table></div>
+    </div>
+    <div class="card"><header><h2>If it gets too much</h2></header>
+      <div class="sources" style="font-size:.9rem;color:var(--ink)">
+        <p>Free, confidential debt counselling (schuldbemiddeling) is available in Antwerp through the <b>OCMW / social service of the city</b> and the <b>CAW Antwerpen</b>. They can negotiate payment plans with creditors.</p>
+        <p>If debts are structurally unpayable, a <b>collective debt settlement</b> (collectieve schuldenregeling) through the labour court freezes interest and sets one affordable monthly amount.</p>
+        <p>Never take a new consumer credit or buy-now-pay-later plan to pay off another one. Check your registered credits for free at the National Bank's Central Individual Credit Register.</p>
+      </div>
+    </div>
+  </div>`;
+}
+function deriveDebts(r){
+  const tb = $("#orderRows"); if(!tb) return;
+  const ordered = [...S.debts].filter(d=>num(d.balance)>0).sort((a,b)=>{
+    const pa = r.plan.payoff[a.id] ?? 1e9, pb = r.plan.payoff[b.id] ?? 1e9; return pa - pb;
+  });
+  tb.innerHTML = ordered.map((d,i) => `<tr><td class="muted">${i+1}</td><td>${esc(d.name)}</td><td class="n">${eur(num(d.balance))}</td><td class="n">${num(d.apr)}%</td>
+    <td class="n">${r.plan.payoff[d.id] ? futureLabel(r.plan.payoff[d.id]) : "never"}</td></tr>`).join("") || `<tr><td colspan="5" class="muted">Nothing to pay off.</td></tr>`;
+  $("#orderNote").textContent = r.debtTotal ? `${eur(r.debtTotal)} total · ${eur(r.debtBudget)}/month · ${S.strategy==="avalanche"?"highest interest first":"smallest balance first"}` : "";
+}
+
+/* Antwerp check tab */
+function renderAntwerp(){
+  $("#panel-antwerp").innerHTML = `
+  <div class="grid2">
+    <div class="card"><header><h2>Rent</h2></header><div id="rentBox"></div></div>
+    <div class="card"><header><h2>Your household</h2></header><div id="hhBox"></div></div>
+  </div>
+  <div class="card"><header><h2>You vs a typical Antwerp household</h2><span class="small muted">Same size and home type, monthly, 2026 estimates</span></header>
+    <div class="tscroll"><table><thead><tr><th>Category</th><th class="n">You</th><th class="n">Typical</th><th class="n">Difference</th><th>Compared</th></tr></thead><tbody id="cmpRows"></tbody><tfoot id="cmpFoot"></tfoot></table></div>
+  </div>
+  <div class="card sources">
+    <h3 style="color:var(--ink)">Where the typical figures come from</h3>
+    <p>These are rounded estimates for Antwerp city in 2026, built from public Belgian data and indexed for inflation. They are a guide to spot outliers, not an exact standard. Your own contracts and prices come first.</p>
+    <ul>
+      <li>Rent: asking rents on Antwerp listings and the Flemish rent monitor (Steunpunt Wonen), 2025–26.</li>
+      <li>Food, clothing, leisure, personal care: Statbel Household Budget Survey, scaled by adults and children and indexed to 2026 prices.</li>
+      <li>Energy: VREG price comparisons for a flat-sized gas and electricity use.</li>
+      <li>Transport: De Lijn Omnipas (about €399/year for ages 25–64) or typical car costs (fuel, tax, insurance, upkeep) when you have a car.</li>
+      <li>Lean flexible budget (75% of typical): in line with the minimum reference budgets from CEBUD (Thomas More).</li>
+    </ul>
+  </div>`;
+}
+function deriveAntwerp(r){
+  const tb = $("#cmpRows"); if(!tb) return;
+  const rent = r.byCat.housing || 0, bench = benchmark("housing", S);
+  const share = r.income ? rent/r.income : 0;
+  $("#rentBox").innerHTML = rent ? `<div class="kv" style="margin-bottom:10px"><div><b>${eur(rent)}</b><span>your rent</span></div><div><b>${eur(bench)}</b><span>typical ${HOUSING[S.housing].label.toLowerCase()}</span></div><div><b>${Math.round(share*100)}%</b><span>of safe income</span></div></div>
+    <div class="meter" style="height:10px"><i style="width:${Math.min(100,share/0.5*100)}%;background:var(--${share>0.4?"bad":share>0.33?"warn":"good"})"></i></div>
+    <p class="small muted" style="margin-top:6px">Bar runs to 50% of income. Under 33% is comfortable.</p>
+    <p style="margin-top:10px">${rent > bench*1.15 ? `Your rent is <b>${Math.round((rent/bench-1)*100)}% above</b> what a ${HOUSING[S.housing].label.toLowerCase()} typically costs in Antwerp. Worth comparing districts like Deurne, Merksem, Hoboken or Borgerhout when the lease allows.` : rent < bench*0.85 ? `Your rent is <b>below</b> the typical level for this home type. That's a strong base.` : `Your rent is in the normal range for this home type in Antwerp.`}</p>`
+    : `<p class="muted">Add your rent as a cost with category "Rent / mortgage".</p>`;
+  $("#hhBox").innerHTML = `<p>${adults(S).length} adult${adults(S).length!==1?"s":""}, ${kids(S).length} child${kids(S).length!==1?"ren":""}, ${HOUSING[S.housing].label.toLowerCase()}, ${S.car?"with a car":"no car"}.</p>
+    <p class="small muted" style="margin-top:8px">Change these on the Household tab; the typical figures adjust.</p>
+    <div class="kv" style="margin-top:12px"><div><b>${eur(r.flexBench)}</b><span>typical flexible spend</span></div><div><b>${eur(r.leanFloor)}</b><span>lean but livable</span></div><div><b>${eur(r.flexNow)}</b><span>yours now</span></div></div>`;
+  let yT = 0, bT = 0, save = 0;
+  const cats = Object.keys(CATS).filter(k => benchmark(k,S) > 0 || r.byCat[k]);
+  tb.innerHTML = cats.map(k => {
+    const y = r.byCat[k] || 0, b = benchmark(k,S); yT += y; bT += b;
+    if(y > b && k !== "housing") save += y - b;
+    return `<tr><td>${esc(CATS[k].label)}</td><td class="n">${eur(y)}</td><td class="n muted">${eur(b)}</td><td class="n" style="color:var(${y-b>0?"--bad":"--good"})">${y-b>0?"+":""}${eur(y-b)}</td><td>${y?compare(y,b):pill("neutral","none logged")}</td></tr>`;
+  }).join("");
+  const sooner = monthsSooner(S, r, save);
+  $("#cmpFoot").innerHTML = `<tr><td>Total</td><td class="n">${eur(yT)}</td><td class="n muted">${eur(bT)}</td><td class="n">${yT-bT>0?"+":""}${eur(yT-bT)}</td><td></td></tr>
+    ${save>0?`<tr><td colspan="5" style="font-weight:400">Bringing every above-typical category (except rent) down to typical frees <b>${eur(save)}/month</b>${sooner>0?`, making you debt-free <b>${sooner} month${sooner>1?"s":""} sooner</b>`:""}.</td></tr>`:""}`;
+}
+
+function renderEditors(){
+  renderBanner(); renderPlan(); renderHousehold(); renderCosts(); renderDebts(); renderAntwerp();
+  document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === tab));
+  document.querySelectorAll("section.tab").forEach(s => s.hidden = s.dataset.panel !== tab);
+}
+function renderDerived(){
+  const r = compute(S);
+  renderStrip(r); derivePlan(r); deriveHousehold(); deriveCosts(); deriveDebts(r); deriveAntwerp(r);
+}
+function render(){
+  const f = document.activeElement && document.activeElement.id;
+  renderEditors(); renderDerived();
+  if(f){ const el = document.getElementById(f); if(el) el.focus(); }
+}
+
+/* ---------- Events ---------- */
+function touch(){ if(S.example){ S.example = false; renderBanner(); } scheduleSave(); }
+document.addEventListener("input", e => {
+  const el = e.target;
+  if(el.id === "targetRange"){ S.targetMonths = +el.value; renderDerived(); scheduleSave(); return; }
+  if(el.id === "thisMonth"){ S.thisMonth = el.value; renderDerived(); scheduleSave(); return; }
+  if(el.dataset.set && el.tagName !== "BUTTON"){
+    const k = el.dataset.set;
+    S[k] = k === "car" ? el.value === "yes" : (el.type === "number" ? el.value : el.value);
+    touch(); renderDerived(); if(el.tagName === "SELECT") render(); return;
+  }
+  if(el.dataset.list){
+    const item = S[el.dataset.list].find(x => x.id === el.dataset.id); if(!item) return;
+    const f = el.dataset.field;
+    if(f.startsWith("inc:")){ item.inc = item.inc || {}; const m = f.slice(4); if(el.value === "") delete item.inc[m]; else item.inc[m] = el.value; }
+    else item[f] = el.value;
+    if(f === "cat" && el.dataset.list === "costs") item.kind = CATS[el.value]?.kind || item.kind;
+    touch(); renderDerived();
+    if(f === "cat") render();
+  }
+});
+document.addEventListener("change", e => { if(e.target.hasAttribute && e.target.hasAttribute("data-rerender")) render(); });
+document.addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  if(b.dataset.tab){ tab = b.dataset.tab; try{ localStorage.setItem("ahb-tab", tab); }catch(err){} render(); return; }
+  if(b.dataset.set){ S[b.dataset.set] = b.dataset.val; touch(); render(); return; }
+  if(b.dataset.remove){
+    const list = b.dataset.remove;
+    if(b.dataset.armed !== "1"){ b.dataset.armed = "1"; b.textContent = "Remove?"; b.style.fontSize = ".75rem"; setTimeout(()=>{ if(b.isConnected){ b.dataset.armed=""; b.textContent="×"; b.style.fontSize=""; } }, 3000); return; }
+    S[list] = S[list].filter(x => x.id !== b.dataset.id);
+    if(list === "people"){ S.costs.forEach(c => { if(c.owner === b.dataset.id) c.owner = "shared"; }); S.debts.forEach(d => { if(d.owner === b.dataset.id) d.owner = "shared"; }); }
+    touch(); render(); return;
+  }
+  switch(b.id){
+    case "addPerson": S.people.push({id:uid(), name:"Person "+(S.people.length+1), kind:"adult", inc:{}}); touch(); render(); break;
+    case "addCost": { const c = {id:uid(), name:"", cat:"groceries", amount:"", freq:"m", kind:"flex", owner:"shared"}; S.costs.push(c); touch(); render(); $("#cn-"+c.id)?.focus(); break; }
+    case "addDebt": { const d = {id:uid(), name:"", balance:"", apr:"", min:"", owner:"shared"}; S.debts.push(d); touch(); render(); $("#dn-"+d.id)?.focus(); break; }
+    case "useFastest": { const r = compute(S); S.targetMonths = r.fastest; touch(); render(); break; }
+    case "keepExample": S.example = false; scheduleSave(); render(); break;
+    case "startEmpty":
+      if(b.dataset.armed !== "1"){ b.dataset.armed = "1"; b.textContent = "Clear the example? Tap again"; return; }
+      S = emptyState(); tab = "household"; scheduleSave(); render(); break;
+  }
+});
+
+/* ---------- Persistence: private per-person store, browser fallback ---------- */
+const LS_KEY = "ahb-state-v1";
+let db = null, docRef = null, saveTimer = null, saving = false, dirty = false;
+function setSave(txt, busy){ const el = $("#saveState"); el.classList.toggle("busy", !!busy); el.querySelector("span").textContent = txt; }
+function scheduleSave(){ dirty = true; setSave("Saving…", true); clearTimeout(saveTimer); saveTimer = setTimeout(flush, 700); }
+async function flush(){
+  if(saving){ saveTimer = setTimeout(flush, 400); return; }
+  saving = true; dirty = false;
+  const snapshot = JSON.parse(JSON.stringify(S));
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(snapshot)); }catch(e){}
+  if(docRef){
+    try{ await docRef.set(snapshot); setSave("Saved to your account"); }
+    catch(e){ setSave(e && e.code === "quota_exceeded" ? "Storage full" : "Saved in this browser only", true); }
+  } else setSave("Saved in this browser");
+  saving = false;
+}
+function valid(x){ return x && Array.isArray(x.people) && Array.isArray(x.costs) && Array.isArray(x.debts); }
+
+try{ const raw = localStorage.getItem(LS_KEY); if(raw){ const x = JSON.parse(raw); if(valid(x)) S = x; } }catch(e){}
+render();
+setSave(S.example ? "Example data" : "Saved in this browser");
+
+(async function connect(){
+  if(!window.claude || !window.claude.use) return;
+  try{
+    const [dbNs, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    const id = user ? await user.id() : null;
+    if(!dbNs || !id) return;
+    db = dbNs; docRef = db.doc("data/users/" + id + "/budget");
+    const snap = await docRef.get();
+    if(snap.exists && valid(snap.data())){
+      if(!dirty){ S = JSON.parse(JSON.stringify(snap.data())); render(); }
+      setSave("Saved to your account");
+    } else if(!S.example){ await flush(); }
+    else setSave("Example data");
+  }catch(e){ docRef = null; }
+})();
+})();
+</script>
+</body>
+</html>
