@@ -3,197 +3,295 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Household budget planner for Antwerp: variable incomes, shared costs, a debt-free date and spending caps.">
+<meta name="theme-color" content="#eef1ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0f0c" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27%3E%3Crect width=%2724%27 height=%2724%27 rx=%277%27 fill=%27%23121611%27/%3E%3Cpath d=%27M5 16c3-1 4.5-5 7-5s4.5 2.5 7 1.8M5 9.5c3-1 4.5-3.5 7-3.5s4.5 1.8 7 1.4%27 fill=%27none%27 stroke=%27%23c6ef6b%27 stroke-width=%272%27 stroke-linecap=%27round%27/%3E%3C/svg%3E">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}</style>
 <title>Antwerp Household Budget</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap">
 <style>
-/* Layout: a sticky money strip on top (the monthly split), tabs underneath, each tab a single working column of cards. */
+/* Layout: soft structuralism. A double-bezel hero holds the one number that matters (the debt-free date) beside the monthly split; a floating pill nav sits under it; each tab is a calm column of soft, borderless surfaces. */
 :root{
-  --bg:#eef2f1; --surface:#ffffff; --sunk:#e4eae8; --ink:#13201e; --muted:#5a6a67; --line:#d5dedb;
-  --accent:#0d5c63; --accent-ink:#ffffff; --accent-soft:#d3e8e7;
-  --good:#2b7a4b; --good-soft:#dcefe2; --warn:#a4660d; --warn-soft:#f6e7cc; --bad:#b3342a; --bad-soft:#f7dcd8;
-  --c-fixed:#56707a; --c-debt:#b3342a; --c-save:#2b7a4b; --c-flex:#0d8a92; --c-free:#b9c6c3;
-  --display:"Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
-  --body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-  --r:10px;
+  --canvas:#eef1ec; --canvas-2:#e6eae3; --surface:#fbfcfa; --surface-2:#f4f6f2; --ink:#121611; --body:#3c433b; --muted:#6f786d; --hair:rgba(18,22,17,.07);
+  --accent:#c6ef6b; --accent-ink:#152009; --accent-deep:#2f5a14;
+  --good:#2c7a4b; --good-bg:#e3f1e5; --warn:#94600c; --warn-bg:#f8edcf; --bad:#b23a2b; --bad-bg:#f8e1dc; --neutral-bg:#e9ece6;
+  --c-fixed:#7d8f87; --c-debt:#d36a50; --c-save:#5d9b6f; --c-flex:#9fd44d; --track:#e2e7df;
+  --shadow:0 1px 1px rgba(40,56,32,.04), 0 8px 24px -8px rgba(40,56,32,.12), 0 24px 48px -24px rgba(40,56,32,.10);
+  --shadow-sm:0 1px 2px rgba(40,56,32,.06), 0 4px 12px -6px rgba(40,56,32,.10);
+  --inset:inset 0 1px 0 rgba(255,255,255,.7);
+  --serif:"Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --sans:"Geist", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --spring:cubic-bezier(.32,.72,0,1);
+  --r-xl:30px; --r-lg:22px; --r-md:14px; --r-sm:10px;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#0e1615; --surface:#152120; --sunk:#1b2a28; --ink:#e3ecea; --muted:#94a7a3; --line:#273835;
-  --accent:#4fb6b5; --accent-ink:#06201f; --accent-soft:#173d3c;
-  --good:#6cc08d; --good-soft:#173628; --warn:#e0a84d; --warn-soft:#3a2c12; --bad:#ef7d72; --bad-soft:#40201c;
-  --c-fixed:#7e98a2; --c-debt:#e0675c; --c-save:#5fb37f; --c-flex:#3fb0b8; --c-free:#3a4b48;
+  --canvas:#0c0f0c; --canvas-2:#111511; --surface:#151a15; --surface-2:#1b211b; --ink:#eaf0e6; --body:#c3cbbf; --muted:#8c968a; --hair:rgba(234,240,230,.08);
+  --accent:#c6ef6b; --accent-ink:#152009; --accent-deep:#c6ef6b;
+  --good:#7fcf97; --good-bg:#16291c; --warn:#e8b45a; --warn-bg:#2e2510; --bad:#f08a76; --bad-bg:#341a15; --neutral-bg:#20271f;
+  --c-fixed:#6c7f76; --c-debt:#e07a5f; --c-save:#6fb383; --c-flex:#b7e866; --track:#232b22;
+  --shadow:0 1px 1px rgba(0,0,0,.3), 0 12px 32px -12px rgba(0,0,0,.6);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4), 0 6px 16px -8px rgba(0,0,0,.5);
+  --inset:inset 0 1px 0 rgba(255,255,255,.05);
   color-scheme:dark }}
 :root[data-theme="dark"]{
-  --bg:#0e1615; --surface:#152120; --sunk:#1b2a28; --ink:#e3ecea; --muted:#94a7a3; --line:#273835;
-  --accent:#4fb6b5; --accent-ink:#06201f; --accent-soft:#173d3c;
-  --good:#6cc08d; --good-soft:#173628; --warn:#e0a84d; --warn-soft:#3a2c12; --bad:#ef7d72; --bad-soft:#40201c;
-  --c-fixed:#7e98a2; --c-debt:#e0675c; --c-save:#5fb37f; --c-flex:#3fb0b8; --c-free:#3a4b48;
+  --canvas:#0c0f0c; --canvas-2:#111511; --surface:#151a15; --surface-2:#1b211b; --ink:#eaf0e6; --body:#c3cbbf; --muted:#8c968a; --hair:rgba(234,240,230,.08);
+  --accent:#c6ef6b; --accent-ink:#152009; --accent-deep:#c6ef6b;
+  --good:#7fcf97; --good-bg:#16291c; --warn:#e8b45a; --warn-bg:#2e2510; --bad:#f08a76; --bad-bg:#341a15; --neutral-bg:#20271f;
+  --c-fixed:#6c7f76; --c-debt:#e07a5f; --c-save:#6fb383; --c-flex:#b7e866; --track:#232b22;
+  --shadow:0 1px 1px rgba(0,0,0,.3), 0 12px 32px -12px rgba(0,0,0,.6);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4), 0 6px 16px -8px rgba(0,0,0,.5);
+  --inset:inset 0 1px 0 rgba(255,255,255,.05);
   color-scheme:dark }
+
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:0 48px}
-.wrap{max-width:1080px;margin:0 auto}
-h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
-h1{font-size:1.55rem;font-weight:700;letter-spacing:-.01em}
-h2{font-size:1.2rem;font-weight:600}
-h3{font-size:1rem;font-weight:600}
-p{margin:0}
-.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent}
+body{background:var(--canvas);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:0 72px;touch-action:manipulation;
+  background-image:radial-gradient(1200px 520px at 85% -10%, color-mix(in srgb,var(--accent) 22%, transparent), transparent 60%), radial-gradient(900px 500px at -10% 10%, color-mix(in srgb,var(--c-save) 10%, transparent), transparent 60%);background-repeat:no-repeat}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.035;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.wrap{max-width:1120px;margin:0 auto;position:relative;z-index:2}
+h1,h2,h3{margin:0;text-wrap:balance;color:var(--ink)}
+h1{font-family:var(--sans);font-size:1.05rem;font-weight:600;letter-spacing:-.01em}
+h2{font-size:1.18rem;font-weight:600;letter-spacing:-.02em}
+h3{font-size:1rem;font-weight:600;letter-spacing:-.01em}
+p{margin:0;text-wrap:pretty}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .muted{color:var(--muted)}
 .small{font-size:.85rem}
-.label{font-size:.72rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.label{font-size:.8rem;color:var(--muted);font-weight:500}
 button,input,select{font:inherit;color:inherit}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+:focus-visible{outline:2px solid var(--accent-deep);outline-offset:3px;border-radius:6px}
+.skip{position:absolute;left:16px;top:-60px;z-index:20;background:var(--ink);color:var(--canvas);padding:8px 14px;border-radius:999px;text-decoration:none;font-weight:500}
+.skip:focus{top:12px}
 
 /* Header */
-header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px;padding-block:20px 12px}
-.brand small{display:block;color:var(--muted);font-size:.85rem;margin-top:2px}
-.save{font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:6px}
-.save i{width:8px;height:8px;border-radius:50%;background:var(--good);display:inline-block}
-.save.busy i{background:var(--warn)}
+header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding-block:22px 18px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:36px;height:36px;border-radius:11px;background:#121611;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);display:grid;place-items:center;flex:none;box-shadow:var(--shadow-sm)}
+.mark svg{width:20px;height:20px}
+.brand small{display:block;color:var(--muted);font-size:.82rem}
+.save{font-size:.8rem;color:var(--muted);display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--surface);box-shadow:var(--shadow-sm)}
+.save i{width:7px;height:7px;border-radius:50%;background:var(--good);display:inline-block;box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 20%,transparent)}
+.save.busy i{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 20%,transparent)}
 
-/* Money strip */
-.strip{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:8px 10px;border-bottom:1px solid var(--line)}
-.split{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--sunk)}
-.split div{height:100%;min-width:0;transition:width .3s}
-.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px 12px;margin-top:8px}
-.stat{min-width:0}
-.stat .v{font-family:var(--mono);font-size:1.02rem;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
-.stat .k{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dot{width:8px;height:8px;border-radius:2px;flex:none}
-.stat.hero .v{color:var(--accent);font-weight:600}
-@media (max-width:760px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* Double-bezel shell */
+.bezel{padding:7px;border-radius:var(--r-xl);background:color-mix(in srgb,var(--ink) 4%,transparent);box-shadow:inset 0 0 0 1px var(--hair)}
+.bezel > .core{border-radius:calc(var(--r-xl) - 7px);background:var(--surface);box-shadow:var(--shadow),var(--inset)}
 
-/* Tabs */
-nav.tabs{display:flex;gap:4px;overflow-x:auto;padding-block:14px 12px;scrollbar-width:none}
-nav.tabs button{border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;font-weight:500;font-size:.9rem}
-nav.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-section.tab{display:grid;gap:14px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
-.card > header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:6px 12px;margin-bottom:12px}
-.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-@media (max-width:800px){.grid2{grid-template-columns:1fr}}
+/* Hero */
+.hero .core{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:0;overflow:hidden}
+.hero-date{padding:30px 34px 30px;display:flex;flex-direction:column;gap:14px;position:relative;
+  background:radial-gradient(420px 260px at 0% 100%, color-mix(in srgb,var(--accent) 30%, transparent), transparent 70%)}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.78rem;font-weight:500;color:var(--body);align-self:flex-start;padding:5px 11px 5px 8px;border-radius:999px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--hair)}
+.eyebrow b{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
+.headline{font-family:var(--serif);font-weight:400;font-size:clamp(3.2rem,8.5vw,6rem);line-height:.92;letter-spacing:-.025em;color:var(--ink)}
+.headline em{font-style:italic;color:var(--muted)}
+.hero-sub{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--body);font-size:.92rem}
+.hero-sub b{font-family:var(--mono);font-weight:500;color:var(--ink);letter-spacing:-.02em}
+.hero-split{padding:30px 34px;border-left:1px solid var(--hair);display:flex;flex-direction:column;gap:16px;background:var(--surface)}
+.income{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.income .v{font-family:var(--mono);font-size:1.9rem;letter-spacing:-.04em;font-weight:500}
+.ribbon{display:flex;gap:3px;height:12px}
+.ribbon div{border-radius:4px;min-width:3px;transition:flex-grow .6s var(--spring)}
+.legend{display:grid;gap:2px}
+.legend .li{display:grid;grid-template-columns:12px minmax(0,1fr) auto 46px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--hair);font-size:.92rem}
+.legend .li:last-child{border-bottom:0}
+.legend .sw{width:10px;height:10px;border-radius:3px}
+.legend .amt{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.legend .pct{font-family:var(--mono);font-size:.78rem;color:var(--muted);text-align:right}
+.legend .li.total{font-weight:600}
+@media (max-width:820px){
+  .hero .core{grid-template-columns:1fr}
+  .hero-split{border-left:0;border-top:1px solid var(--hair)}
+  .hero-date,.hero-split{padding:24px 22px}
+}
 
-.banner{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:12px 14px;border-radius:var(--r);background:var(--warn-soft);color:var(--ink);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent)}
+/* Floating pill nav */
+.navbar{position:sticky;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:10;display:flex;justify-content:center;padding-block:18px 6px;pointer-events:none}
+nav.tabs{pointer-events:auto;display:flex;gap:2px;padding:5px;border-radius:999px;background:color-mix(in srgb,var(--surface) 78%,transparent);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);box-shadow:var(--shadow),inset 0 0 0 1px var(--hair);max-width:100%;overflow-x:auto;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{border:0;background:transparent;padding:8px 15px;border-radius:999px;cursor:pointer;white-space:nowrap;font-weight:500;font-size:.88rem;color:var(--muted);display:inline-flex;align-items:center;gap:7px;transition:background-color .35s var(--spring),color .35s var(--spring),transform .2s var(--spring)}
+nav.tabs button svg{width:16px;height:16px;flex:none}
+nav.tabs button:hover{color:var(--ink);background:color-mix(in srgb,var(--ink) 5%,transparent)}
+nav.tabs button:active{transform:scale(.97)}
+nav.tabs button[aria-selected="true"]{background:var(--ink);color:var(--canvas)}
+@media (max-width:560px){ nav.tabs button span{display:none} nav.tabs button[aria-selected="true"] span{display:inline} }
+
+main{display:block;padding-top:14px}
+section.tab{display:grid;gap:18px}
+section.tab > *{animation:rise .7s var(--spring) both}
+section.tab > *:nth-child(2){animation-delay:.05s} section.tab > *:nth-child(3){animation-delay:.1s} section.tab > *:nth-child(4){animation-delay:.15s} section.tab > *:nth-child(5){animation-delay:.2s}
+@keyframes rise{from{opacity:.001;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.card{background:var(--surface);border-radius:var(--r-lg);padding:24px 26px 26px;min-width:0;box-shadow:var(--shadow-sm),inset 0 0 0 1px var(--hair)}
+.card > header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px 16px;margin-bottom:18px}
+.card > header .small{max-width:52ch}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.grid-plan{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px}
+@media (max-width:860px){.grid2,.grid-plan{grid-template-columns:1fr}.card{padding:20px 18px 22px}}
+@media (max-width:560px){.card > header .seg{width:100%;flex-wrap:nowrap}.card > header .seg button{flex:1;padding-inline:8px;font-size:.8rem}}
+
+.banner{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;padding:14px 16px 14px 20px;border-radius:var(--r-lg);background:var(--warn-bg);color:var(--ink);margin-top:14px}
 .banner p{flex:1 1 320px}
 
-/* Buttons & inputs */
-.btn{border:1px solid var(--line);background:var(--surface);padding:7px 12px;border-radius:8px;cursor:pointer;font-weight:500;font-size:.88rem}
-.btn:hover{border-color:var(--accent)}
-.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.btn.ghost{background:transparent}
-.btn.danger{color:var(--bad)}
-.x{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:4px 8px;border-radius:6px}
-.x:hover{color:var(--bad);background:var(--bad-soft)}
-input[type=text],input[type=number],select{width:100%;min-width:0;padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:var(--bg)}
-input[type=number]{font-family:var(--mono);font-variant-numeric:tabular-nums}
-input:hover,select:hover{border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
-.seg button{border:0;background:var(--surface);padding:6px 11px;cursor:pointer;font-size:.85rem}
-.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
-.field{display:grid;gap:4px;min-width:0}
-.field > span{font-size:.8rem;color:var(--muted)}
-.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+/* Buttons */
+.btn{border:0;background:var(--surface-2);padding:9px 15px;border-radius:999px;cursor:pointer;font-weight:500;font-size:.88rem;box-shadow:inset 0 0 0 1px var(--hair);display:inline-flex;align-items:center;gap:8px;transition:background-color .3s var(--spring),transform .2s var(--spring),box-shadow .3s var(--spring)}
+.btn:hover{background:color-mix(in srgb,var(--ink) 7%,var(--surface-2))}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--ink);color:var(--canvas);box-shadow:var(--shadow-sm);padding:6px 6px 6px 18px}
+.btn.primary:hover{background:color-mix(in srgb,var(--ink) 86%,var(--accent))}
+.btn.primary .bi{width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;transition:transform .35s var(--spring)}
+.btn.primary .bi svg{width:14px;height:14px}
+.btn.primary:hover .bi{transform:rotate(90deg) scale(1.05)}
+.btn.solo{padding:9px 18px}
+.x{border:0;background:transparent;color:var(--muted);cursor:pointer;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;transition:background-color .25s var(--spring),color .25s var(--spring);font-size:.75rem;font-weight:500}
+.x svg{width:16px;height:16px}
+.x:hover{color:var(--bad);background:var(--bad-bg)}
+.x[data-armed="1"]{width:auto;padding-inline:10px;color:var(--bad);background:var(--bad-bg)}
+.x:disabled{opacity:.3;cursor:not-allowed}
+
+/* Inputs */
+input[type=text],input[type=number],select{width:100%;min-width:0;padding:9px 12px;border:0;border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--hair);transition:box-shadow .25s var(--spring),background-color .25s var(--spring)}
+input[type=number]{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+input:hover,select:hover{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 18%,transparent)}
+input:focus,select:focus{outline:none;background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--ink),0 0 0 4px color-mix(in srgb,var(--accent) 45%,transparent)}
+select{appearance:none;-webkit-appearance:none;padding-right:32px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23889283' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
+.seg{display:inline-flex;padding:4px;gap:2px;border-radius:999px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--hair);flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:6px 13px;border-radius:999px;cursor:pointer;font-size:.84rem;font-weight:500;color:var(--muted);transition:background-color .3s var(--spring),color .3s var(--spring)}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sm)}
+.field{display:grid;gap:6px;min-width:0}
+.field > span{font-size:.82rem;color:var(--muted);font-weight:500}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}
 
 /* Editable rows */
-.rows{display:grid;gap:6px}
-.row{display:grid;gap:8px;align-items:center}
-.row .lab{display:none;font-size:.72rem;color:var(--muted)}
-.rows.costs .row{grid-template-columns:minmax(0,2fr) minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.9fr) minmax(0,1.2fr) 36px}
-.rows.debts .row{grid-template-columns:minmax(0,2fr) minmax(0,1.1fr) minmax(0,.8fr) minmax(0,1fr) minmax(0,1.2fr) 36px}
-.rowhead{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.rows{display:grid;gap:4px}
+.row{display:grid;gap:8px;align-items:center;padding:4px;border-radius:var(--r-md);transition:background-color .25s var(--spring)}
+.row:not(.rowhead):hover{background:color-mix(in srgb,var(--ink) 3%,transparent)}
+.row .lab{display:none;font-size:.74rem;color:var(--muted);font-weight:500}
+.rows.costs .row{grid-template-columns:minmax(0,2fr) minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) minmax(0,.95fr) minmax(0,1.2fr) 34px}
+.rows.debts .row{grid-template-columns:minmax(0,2fr) minmax(0,1.1fr) minmax(0,.8fr) minmax(0,1fr) minmax(0,1.2fr) 34px}
+.rowhead{font-size:.78rem;color:var(--muted);font-weight:500;padding-block:0 6px!important}
+.rowhead span{padding-left:12px}
 @media (max-width:760px){
-  .rowhead{display:none}
-  .rows.costs .row,.rows.debts .row{grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg)}
-  .row .cell{display:grid;gap:2px}
+  .rowhead{display:none!important}
+  .rows{gap:10px}
+  .rows.costs .row,.rows.debts .row{grid-template-columns:repeat(2,minmax(0,1fr));padding:14px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--hair)}
+  .row input,.row select{background:var(--surface)}
+  .row .cell{display:grid;gap:4px}
   .row .lab{display:block}
   .row .wide{grid-column:1 / -1}
   .row .x{justify-self:end;grid-column:2}
 }
 
 /* People */
-.people{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
-.person .top{display:grid;grid-template-columns:minmax(0,1fr) 110px 36px;gap:8px;align-items:center;margin-bottom:12px}
-.months{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.months label{display:grid;gap:2px;font-size:.75rem;color:var(--muted)}
-.bars{display:flex;align-items:flex-end;gap:4px;height:44px;margin-top:12px}
-.bars div{flex:1;background:var(--accent-soft);border-radius:3px 3px 0 0;position:relative;min-height:2px}
+.people{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px}
+.person .top{display:grid;grid-template-columns:40px minmax(0,1fr) 108px 34px;gap:10px;align-items:center;margin-bottom:18px}
+.avatar{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;font-weight:600;font-size:.95rem;color:var(--accent-ink);background:var(--accent)}
+.avatar.child{background:var(--neutral-bg);color:var(--body)}
+.months{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.months label{display:grid;gap:4px;font-size:.76rem;color:var(--muted);font-weight:500}
+.bars{display:flex;align-items:flex-end;gap:6px;height:56px;margin-top:18px;padding-top:4px}
+.bars div{flex:1;background:color-mix(in srgb,var(--c-fixed) 38%,var(--track));border-radius:6px;min-height:3px;transform-origin:bottom;animation:grow .7s var(--spring) both}
 .bars div.low{background:var(--accent)}
-.pstats{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-size:.82rem}
+@keyframes grow{from{transform:scaleY(.001)}to{transform:none}}
+.pstats{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin-top:12px;font-size:.84rem}
 
 /* Tables */
-.tscroll{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:.9rem}
-th{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:left;font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
-td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
-tr:last-child td{border-bottom:0}
-tfoot td{font-weight:600;border-top:1px solid var(--line)}
-.meter{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;min-width:60px}
-.meter i{display:block;height:100%;border-radius:3px}
+.tscroll{overflow-x:auto;margin-inline:-6px;padding-inline:6px}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th{font-size:.78rem;color:var(--muted);text-align:left;font-weight:500;padding:0 10px 10px;white-space:nowrap}
+td{padding:11px 10px;border-top:1px solid var(--hair);vertical-align:middle}
+tbody tr{transition:background-color .2s var(--spring)}
+tbody tr:hover{background:color-mix(in srgb,var(--ink) 2.5%,transparent)}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.02em}
+th.n{font-family:var(--sans);letter-spacing:0}
+tfoot td{font-weight:600;border-top:1px solid color-mix(in srgb,var(--ink) 18%,transparent)}
+.meter{height:6px;border-radius:999px;background:var(--track);overflow:hidden;min-width:70px}
+.meter i{display:block;height:100%;border-radius:999px;transform-origin:left;animation:fill .9s var(--spring) both}
+@keyframes fill{from{transform:scaleX(.001)}to{transform:none}}
 
-.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.75rem;font-weight:600;white-space:nowrap}
-.pill.good{background:var(--good-soft);color:var(--good)}
-.pill.warn{background:var(--warn-soft);color:var(--warn)}
-.pill.bad{background:var(--bad-soft);color:var(--bad)}
-.pill.neutral{background:var(--sunk);color:var(--muted)}
+/* Status tags: square-ish with a dot */
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 9px 3px 7px;border-radius:7px;font-size:.76rem;font-weight:500;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:2px;background:currentColor}
+.pill.good{background:var(--good-bg);color:var(--good)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.pill.neutral{background:var(--neutral-bg);color:var(--muted)}
 
 /* Plan */
-.target{display:grid;gap:12px}
-.bigdate{font-family:var(--display);font-size:2.2rem;font-weight:700;letter-spacing:-.02em;line-height:1}
-.bigdate small{font-family:var(--body);font-size:.95rem;font-weight:400;color:var(--muted);letter-spacing:0;margin-left:6px}
-input[type=range]{width:100%;accent-color:var(--accent)}
-.kv{display:flex;flex-wrap:wrap;gap:6px 22px}
-.kv div{display:grid}
-.kv b{font-family:var(--mono);font-weight:500;font-variant-numeric:tabular-nums}
+.target{display:grid;gap:16px;align-content:start}
+.pace{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pace .d{font-family:var(--serif);font-size:2.1rem;line-height:1;letter-spacing:-.02em}
+.pace .m{font-family:var(--mono);color:var(--muted);font-size:.9rem}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;cursor:pointer;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:999px;background:linear-gradient(90deg,var(--ink) var(--p),var(--track) var(--p))}
+input[type=range]::-moz-range-track{height:8px;border-radius:999px;background:var(--track)}
+input[type=range]::-moz-range-progress{height:8px;border-radius:999px;background:var(--ink)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;margin-top:-9px;border-radius:50%;background:var(--accent);border:3px solid var(--surface);box-shadow:0 0 0 1px var(--hair),var(--shadow-sm);transition:transform .25s var(--spring)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--accent);border:3px solid var(--surface);box-shadow:var(--shadow-sm)}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.12)}
+input[type=range]:focus{outline:none;box-shadow:none}
+input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 50%,transparent)}
+.range-ends{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-top:-6px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:2px;border-radius:var(--r-md);overflow:hidden;background:var(--hair)}
+.kv div{display:grid;gap:2px;padding:12px 14px;background:var(--surface-2)}
+.kv b{font-family:var(--mono);font-weight:500;font-variant-numeric:tabular-nums;font-size:1.05rem;letter-spacing:-.03em}
 .kv span{font-size:.78rem;color:var(--muted)}
-.tips{display:grid;gap:10px;margin:0;padding:0;list-style:none}
-.tips li{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:10px 12px;border-radius:8px;background:var(--bg)}
-.tips li .pill{margin-top:2px}
-.callout{padding:12px 14px;border-radius:8px;background:var(--bg);border-left:3px solid var(--accent)}
-.callout.bad{border-left-color:var(--bad)}
-.callout.good{border-left-color:var(--good)}
-.flow{display:grid;gap:6px}
-.flow div{display:flex;justify-content:space-between;gap:10px;padding-block:4px;border-bottom:1px dashed var(--line)}
+.tips{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.tips li{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;padding:12px 14px;border-radius:var(--r-md);background:var(--surface-2);font-size:.93rem;color:var(--body)}
+.tips li .pill{margin-top:1px}
+.callout{padding:13px 16px;border-radius:var(--r-md);background:var(--surface-2);color:var(--body);font-size:.93rem}
+.callout.bad{background:var(--bad-bg);color:var(--ink)}
+.callout.good{background:var(--good-bg);color:var(--ink)}
+.flow{display:grid}
+.flow div{display:flex;justify-content:space-between;gap:12px;padding-block:10px;border-bottom:1px solid var(--hair);font-size:.93rem}
+.flow div .num{color:var(--ink)}
 .flow div:last-child{border-bottom:0;font-weight:600}
 .confirmrow{display:flex;flex-wrap:wrap;gap:8px}
-details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
-.sources{font-size:.82rem;color:var(--muted);display:grid;gap:6px}
-.sources ul{margin:0;padding-left:18px}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.sources{font-size:.86rem;color:var(--muted);display:grid;gap:8px}
+.sources ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.help{display:grid;gap:12px;font-size:.92rem;color:var(--body)}
+.help p{padding-left:14px;border-left:2px solid var(--accent)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
 
+<a class="skip" href="#main">Skip to content</a>
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <h1>Antwerp Household Budget</h1>
-      <small>Plan spending around variable income and a debt-free date.</small>
+      <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#c6ef6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17c3-1 5-6 8-6s5 3 8 2"/><path d="M4 9.5c3-1 5-4 8-4s5 2 8 1.5"/></svg></div>
+      <div><h1>Antwerp Household Budget</h1><small>Spend calmly, pay it off, know where you stand.</small></div>
     </div>
-    <div class="save" id="saveState"><i></i><span>Loading…</span></div>
+    <div class="save" id="saveState" role="status" aria-live="polite"><i></i><span>Loading…</span></div>
   </header>
 
-  <div class="strip" id="strip"></div>
-
-  <nav class="tabs" role="tablist" id="tabs">
-    <button role="tab" data-tab="plan" id="tab-plan">Plan</button>
-    <button role="tab" data-tab="household" id="tab-household">Household &amp; income</button>
-    <button role="tab" data-tab="costs" id="tab-costs">Costs</button>
-    <button role="tab" data-tab="debts" id="tab-debts">Debts</button>
-    <button role="tab" data-tab="antwerp" id="tab-antwerp">Antwerp check</button>
-  </nav>
-
+  <div class="bezel hero"><div class="core" id="hero"></div></div>
   <div id="exampleBanner"></div>
 
-  <section class="tab" data-panel="plan" id="panel-plan"></section>
-  <section class="tab" data-panel="household" id="panel-household" hidden></section>
-  <section class="tab" data-panel="costs" id="panel-costs" hidden></section>
-  <section class="tab" data-panel="debts" id="panel-debts" hidden></section>
-  <section class="tab" data-panel="antwerp" id="panel-antwerp" hidden></section>
+  <div class="navbar"><nav class="tabs" role="tablist" id="tabs" aria-label="Sections">
+    <button role="tab" data-tab="plan" id="tab-plan" aria-controls="panel-plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg><span>Plan</span></button>
+    <button role="tab" data-tab="household" id="tab-household" aria-controls="panel-household"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.7-3.2 3.1-5 6-5s5.3 1.8 6 5"/><path d="M16 5.5a3 3 0 0 1 0 5.6M18.5 14.5c1.4.8 2.2 2.4 2.5 4.5"/></svg><span>Household &amp; income</span></button>
+    <button role="tab" data-tab="costs" id="tab-costs" aria-controls="panel-costs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg><span>Costs</span></button>
+    <button role="tab" data-tab="debts" id="tab-debts" aria-controls="panel-debts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v10H3z"/><path d="M3 11h18"/><path d="M7 15h3"/></svg><span>Debts</span></button>
+    <button role="tab" data-tab="antwerp" id="tab-antwerp" aria-controls="panel-antwerp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg><span>Antwerp check</span></button>
+  </nav></div>
+
+  <main id="main" tabindex="-1">
+  <section class="tab" role="tabpanel" data-panel="plan" id="panel-plan"></section>
+  <section class="tab" role="tabpanel" data-panel="household" id="panel-household" hidden></section>
+  <section class="tab" role="tabpanel" data-panel="costs" id="panel-costs" hidden></section>
+  <section class="tab" role="tabpanel" data-panel="debts" id="panel-debts" hidden></section>
+  <section class="tab" role="tabpanel" data-panel="antwerp" id="panel-antwerp" hidden></section>
+  </main>
 </div>
 
 <script>
@@ -487,43 +585,66 @@ function compare(now, bench){
   return pill("neutral","typical");
 }
 
+const ICON = {
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12h10l1-12M9 7V4h6v3"/></svg>',
+  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>'
+};
+const addBtn = (id, label) => `<button class="btn primary" id="${id}"><span>${label}</span><span class="bi">${ICON.plus}</span></button>`;
+const removeBtn = (list, id, name, disabled) => `<button class="x" data-remove="${list}" data-id="${id}" aria-label="Remove ${esc(name||"item")}" ${disabled?"disabled":""}>${ICON.trash}</button>`;
+
 function renderStrip(r){
-  const inc = Math.max(r.income, 1);
   const parts = [
     ["Fixed costs", r.fixed, "--c-fixed"],
     ["Debt payments", r.debtBudget, "--c-debt"],
     ["Set aside", r.buffer, "--c-save"],
-    ["Flexible", Math.max(0, r.flexPot), "--c-flex"]
+    ["Flexible spending", r.flexPot, "--c-flex"]
   ];
-  const bar = parts.map(([k,v,c]) => `<div title="${k}: ${eur(v)}" style="width:${Math.max(0,v)/Math.max(inc, r.fixed+r.debtBudget+r.buffer)*100}%;background:var(${c})"></div>`).join("");
-  const free = isFinite(r.plan.months) ? (r.debtTotal ? futureLabel(r.plan.months) : "No debt") : "Never at this rate";
-  $("#strip").innerHTML = `<div class="split" role="img" aria-label="How safe monthly income is split">${bar}</div>
-  <div class="stats">
-    <div class="stat"><div class="v">${eur(r.income)}</div><div class="k">Safe income</div></div>
-    ${parts.map(([k,v,c]) => `<div class="stat"><div class="v"${k==="Flexible"&&r.flexPot<0?' style="color:var(--bad)"':""}>${eur(k==="Flexible"?r.flexPot:v)}</div><div class="k"><span class="dot" style="background:var(${c})"></span>${k}</div></div>`).join("")}
-    <div class="stat hero"><div class="v">${free}</div><div class="k">Debt-free</div></div>
-  </div>`;
+  const inc = Math.max(r.income, 1);
+  const ribbon = parts.map(([k,v,c]) => `<div title="${k}: ${eur(v)}" style="flex-grow:${Math.max(0,v)};background:var(${c})"></div>`).join("");
+  let head, sub;
+  if(!r.debtTotal){ head = `Debt <em>free</em>`; sub = `<span>No debts entered. Everything after costs goes to your buffer and spending.</span>`; }
+  else if(!isFinite(r.plan.months)){ head = `Not <em>yet</em>`; sub = `<span>Minimum payments don't cover the interest. See the Plan tab.</span>`; }
+  else {
+    const d = new Date(now.getFullYear(), now.getMonth()+r.plan.months, 1);
+    head = `${d.toLocaleDateString("en-GB",{month:"short"})} <em>${d.getFullYear()}</em>`;
+    sub = `<span><b>${r.plan.months}</b> months</span><span><b>${eur(r.debtBudget)}</b> a month on ${eur(r.debtTotal)} debt</span><span><b>${eur(r.plan.interest)}</b> interest</span>`;
+  }
+  $("#hero").innerHTML = `
+    <div class="hero-date">
+      <span class="eyebrow"><b></b>${r.debtTotal ? "Debt-free by" : "Status"}</span>
+      <div class="headline">${head}</div>
+      <div class="hero-sub">${sub}</div>
+    </div>
+    <div class="hero-split">
+      <div class="income"><span class="label">Safe monthly income</span><span class="v">${eur(r.income)}</span></div>
+      <div class="ribbon" role="img" aria-label="How safe monthly income is split">${ribbon}</div>
+      <div class="legend">
+        ${parts.map(([k,v,c]) => `<div class="li"><span class="sw" style="background:var(${c})"></span><span>${k}</span><span class="amt"${v<0?' style="color:var(--bad)"':""}>${eur(v)}</span><span class="pct">${Math.round(v/inc*100)}%</span></div>`).join("")}
+      </div>
+    </div>`;
 }
 
 function renderBanner(){
-  $("#exampleBanner").innerHTML = S.example ? `<div class="banner"><p><b>These are example figures</b> for a two-adult, one-child household. Edit them into your own, or clear them and start from scratch.</p>
-    <div class="confirmrow"><button class="btn" id="keepExample">Edit these</button><button class="btn primary" id="startEmpty">Start empty</button></div></div>` : "";
+  $("#exampleBanner").innerHTML = S.example ? `<div class="banner" role="note"><p><b>These are example figures</b> for a two-adult, one-child household. Edit them into your own, or clear them and start from scratch.</p>
+    <div class="confirmrow"><button class="btn" id="keepExample">Edit these</button><button class="btn primary solo" id="startEmpty">Start empty</button></div></div>` : "";
 }
 
 /* Plan tab */
 function renderPlan(){
   $("#panel-plan").innerHTML = `
-  <div class="grid2">
+  <div class="grid-plan">
     <div class="card target">
-      <header><h2>Debt-free target</h2>
+      <header><h2>Choose your pace</h2>
         <div class="seg" role="group" aria-label="Payoff order">
           <button data-set="strategy" data-val="avalanche" aria-pressed="${S.strategy==="avalanche"}" id="st-av">Highest interest first</button>
           <button data-set="strategy" data-val="snowball" aria-pressed="${S.strategy==="snowball"}" id="st-sn">Smallest balance first</button>
         </div>
       </header>
-      <div id="planTarget"></div>
+      <div class="pace" id="pace"></div>
       <input type="range" id="targetRange" min="3" step="1" aria-label="Months until debt-free">
-      <div class="small muted" id="rangeHint"></div>
+      <div class="range-ends"><span>Faster, tighter budget</span><span id="rangeHint"></span></div>
+      <div class="target" id="planTarget"></div>
     </div>
     <div class="card">
       <header><h2>Where each euro goes</h2><span class="small muted" id="basisNote"></span></header>
@@ -541,7 +662,7 @@ function renderPlan(){
     <div class="card">
       <header><h2>This month</h2><span class="small muted">For variable income</span></header>
       <label class="field"><span>Total household income that came in this month (€)</span>
-        <input type="number" inputmode="decimal" id="thisMonth" value="${esc(S.thisMonth)}" placeholder="e.g. 5200"></label>
+        <input type="number" inputmode="decimal" id="thisMonth" value="${esc(S.thisMonth)}" placeholder="e.g. 5200…"></label>
       <div id="thisMonthOut" style="margin-top:12px"></div>
     </div>
   </div>
@@ -559,13 +680,16 @@ function derivePlan(r){
   const range = $("#targetRange");
   range.max = r.maxT; if(document.activeElement !== range) range.value = r.T;
   range.disabled = !r.debtTotal;
+  range.style.setProperty("--p", ((num(range.value)-3)/Math.max(1, r.maxT-3)*100) + "%");
   if(!r.debtTotal){
-    $("#planTarget").innerHTML = `<div class="bigdate">No debt</div><p class="muted">Add debts on the Debts tab to plan a payoff.</p>`;
+    $("#pace").innerHTML = `<span class="d">No debt</span>`;
+    $("#planTarget").innerHTML = `<p class="muted">Add debts on the Debts tab to plan a payoff.</p>`;
     $("#rangeHint").textContent = "";
   } else {
     const minOnlyTxt = isFinite(r.minOnly.months) ? `${r.minOnly.months} months paying only minimums` : "minimum payments never clear it";
     const saved = isFinite(r.minOnly.months) ? r.minOnly.interest - r.plan.interest : 0;
-    $("#planTarget").innerHTML = `<div class="bigdate">${futureLabel(r.plan.months)}<small>${r.plan.months} month${r.plan.months>1?"s":""}</small></div>
+    $("#pace").innerHTML = `<span class="d">${futureLabel(r.plan.months)}</span><span class="m">${r.plan.months} month${r.plan.months>1?"s":""}</span>`;
+    $("#planTarget").innerHTML = `
       <div class="kv">
         <div><b>${eur(r.debtBudget)}</b><span>on debt per month</span></div>
         <div><b>${eur(r.extra)}</b><span>above minimums</span></div>
@@ -574,8 +698,9 @@ function derivePlan(r){
       </div>
       ${r.status==="bad" ? `<div class="callout bad">This date needs ${eur(-r.flexPot)} a month more than you have after fixed costs.${r.fastest?` The fastest realistic date is <b>${futureLabel(r.fastest)}</b> (${r.fastest} months).`:" Even minimum payments don't fit; see Suggestions."}</div>`
         : r.status==="warn" ? `<div class="callout">Tight: flexible spending would be below a lean Antwerp budget (${eur(r.leanFloor)}). Hard to keep up for long.</div>` : ""}
-      ${r.fastest && r.fastest !== r.T ? `<button class="btn" id="useFastest">Use fastest realistic: ${r.fastest} months</button>` : ""}`;
-    $("#rangeHint").textContent = `Drag to trade spending for speed. Right end: ${minOnlyTxt}.`;
+      ${r.fastest && r.fastest !== r.T ? `<div><button class="btn" id="useFastest">Use fastest realistic: ${r.fastest} months</button></div>` : ""}`;
+    $("#rangeHint").textContent = isFinite(r.minOnly.months) ? `Minimums only, ${r.minOnly.months} mo` : "Minimums only";
+    range.title = `Right end: ${minOnlyTxt}`;
   }
   $("#basisNote").textContent = {lowest:"Based on your lowest recent month", typical:"Based on your leaner months", average:"Based on average income"}[S.basis];
   $("#planFlow").innerHTML = `
@@ -592,7 +717,7 @@ function derivePlan(r){
     const k = q > 1.05 ? "bad" : q > 0.9 ? "warn" : "good";
     return `<tr><td>${esc(CATS[c.cat]?.label || c.cat)}</td><td class="n"><b>${eur(c.cap)}</b></td><td class="n muted">${eur(c.cap*12/52)}</td><td class="n">${eur(c.now)}</td>
       <td><div class="meter"><i style="width:${Math.min(100,q*100)}%;background:var(--${k})"></i></div></td>
-      <td>${c.now===0?pill("neutral","nothing logged"):q>1.05?pill("bad",`${eur(c.now-c.cap)} over`):pill("good",`${eur(c.cap-c.now)} spare`)}</td></tr>`;
+      <td>${c.now===0?pill("neutral","nothing logged"):q>1.05?pill("bad",`${eur(c.now-c.cap)} over`):(c.cap-c.now<1?pill("warn","at the cap"):pill("good",`${eur(c.cap-c.now)} spare`))}</td></tr>`;
   }).join("");
   $("#capFoot").innerHTML = `<tr><td>Total</td><td class="n">${eur(totCap)}</td><td class="n muted">${eur(totCap*12/52)}</td><td class="n">${eur(totNow)}</td><td></td><td>${r.unassigned>0?pill("good",`${eur(r.unassigned)} unassigned`):""}</td></tr>`;
 
@@ -651,10 +776,11 @@ function renderHousehold(){
   <div class="people">
     ${S.people.map(p => `<div class="card person" data-pid="${p.id}">
       <div class="top">
+        <span class="avatar${p.kind==="child"?" child":""}" aria-hidden="true">${esc((p.name||"?").trim().charAt(0).toUpperCase()||"?")}</span>
         <input type="text" id="pn-${p.id}" data-list="people" data-id="${p.id}" data-field="name" value="${esc(p.name)}" aria-label="Name" data-rerender>
         <select id="pk-${p.id}" data-list="people" data-id="${p.id}" data-field="kind" aria-label="Adult or child" data-rerender>
           <option value="adult"${p.kind!=="child"?" selected":""}>Adult</option><option value="child"${p.kind==="child"?" selected":""}>Child</option></select>
-        <button class="x" data-remove="people" data-id="${p.id}" aria-label="Remove ${esc(p.name)}" ${S.people.length<2?"disabled":""}>×</button>
+        ${removeBtn("people", p.id, p.name, S.people.length<2)}
       </div>
       <div class="label" style="margin-bottom:6px">${p.kind==="child"?"Child benefit (Groeipakket) per month":"Net income received"}</div>
       <div class="months">${MONTHS.map(m => `<label>${mLabel(m)}<input type="number" inputmode="decimal" id="inc-${p.id}-${m}" data-list="people" data-id="${p.id}" data-field="inc:${m}" value="${esc(p.inc?.[m] ?? "")}" placeholder="0"></label>`).join("")}</div>
@@ -662,7 +788,7 @@ function renderHousehold(){
       <div class="pstats" id="ps-${p.id}"></div>
     </div>`).join("")}
   </div>
-  <div><button class="btn" id="addPerson">+ Add person</button></div>
+  <div>${addBtn("addPerson","Add person")}</div>
   <p class="small muted">Enter net pay as it hit your account. For freelance or shift income, fill every month you have. The planner uses the basis above so a bad month doesn't break the plan. Holiday pay (June) and end-of-year bonus (December) will push a month up; with the safest basis those extras go to debt instead of everyday spending.</p>`;
 }
 function deriveHousehold(){
@@ -685,7 +811,7 @@ function renderCosts(){
     <div class="rows costs">
       <div class="row rowhead"><span>What</span><span>Category</span><span>Amount</span><span>Every</span><span>Type</span><span>Paid by</span><span></span></div>
       ${S.costs.map(c => `<div class="row">
-        <label class="cell wide"><span class="lab">What</span><input type="text" id="cn-${c.id}" data-list="costs" data-id="${c.id}" data-field="name" value="${esc(c.name)}" placeholder="Name"></label>
+        <label class="cell wide"><span class="lab">What</span><input type="text" id="cn-${c.id}" data-list="costs" data-id="${c.id}" data-field="name" value="${esc(c.name)}" placeholder="e.g. Rent…"></label>
         <label class="cell wide"><span class="lab">Category</span><select id="cc-${c.id}" data-list="costs" data-id="${c.id}" data-field="cat">${catOptions(c.cat)}</select></label>
         <label class="cell"><span class="lab">Amount (€)</span><input type="number" inputmode="decimal" id="ca-${c.id}" data-list="costs" data-id="${c.id}" data-field="amount" value="${esc(c.amount)}"></label>
         <label class="cell"><span class="lab">Every</span><select id="cf-${c.id}" data-list="costs" data-id="${c.id}" data-field="freq">
@@ -693,10 +819,10 @@ function renderCosts(){
         <label class="cell"><span class="lab">Type</span><select id="ck-${c.id}" data-list="costs" data-id="${c.id}" data-field="kind">
           <option value="fixed"${c.kind==="fixed"?" selected":""}>Fixed</option><option value="flex"${c.kind==="flex"?" selected":""}>Flexible</option></select></label>
         <label class="cell"><span class="lab">Paid by</span><select id="co-${c.id}" data-list="costs" data-id="${c.id}" data-field="owner">${ownerOptions(c.owner)}</select></label>
-        <button class="x" data-remove="costs" data-id="${c.id}" aria-label="Remove ${esc(c.name)}">×</button>
+        ${removeBtn("costs", c.id, c.name)}
       </div>`).join("") || `<p class="muted">No costs yet. Start with rent, energy and groceries.</p>`}
     </div>
-    <div style="margin-top:12px" class="confirmrow"><button class="btn primary" id="addCost">+ Add cost</button></div>
+    <div style="margin-top:16px" class="confirmrow">${addBtn("addCost","Add cost")}</div>
   </div>
   <div class="card"><header><h2>Monthly totals</h2><span class="small muted">Yearly and quarterly bills converted to a monthly amount to set aside</span></header>
     <div class="tscroll"><table><thead><tr><th>Category</th><th class="n">Shared</th>${adults(S).map(p=>`<th class="n">${esc(p.name)}</th>`).join("")}<th class="n">Total</th></tr></thead><tbody id="costTotals"></tbody></table></div>
@@ -721,22 +847,22 @@ function renderDebts(){
     <div class="rows debts">
       <div class="row rowhead"><span>Debt</span><span>Balance</span><span>Rate %</span><span>Minimum</span><span>Whose</span><span></span></div>
       ${S.debts.map(d => `<div class="row">
-        <label class="cell wide"><span class="lab">Debt</span><input type="text" id="dn-${d.id}" data-list="debts" data-id="${d.id}" data-field="name" value="${esc(d.name)}" placeholder="Name"></label>
+        <label class="cell wide"><span class="lab">Debt</span><input type="text" id="dn-${d.id}" data-list="debts" data-id="${d.id}" data-field="name" value="${esc(d.name)}" placeholder="e.g. Credit card…"></label>
         <label class="cell"><span class="lab">Balance (€)</span><input type="number" inputmode="decimal" id="db-${d.id}" data-list="debts" data-id="${d.id}" data-field="balance" value="${esc(d.balance)}"></label>
         <label class="cell"><span class="lab">Rate %</span><input type="number" inputmode="decimal" step="0.1" id="dr-${d.id}" data-list="debts" data-id="${d.id}" data-field="apr" value="${esc(d.apr)}"></label>
         <label class="cell"><span class="lab">Minimum (€)</span><input type="number" inputmode="decimal" id="dm-${d.id}" data-list="debts" data-id="${d.id}" data-field="min" value="${esc(d.min)}"></label>
         <label class="cell"><span class="lab">Whose</span><select id="do-${d.id}" data-list="debts" data-id="${d.id}" data-field="owner">${ownerOptions(d.owner)}</select></label>
-        <button class="x" data-remove="debts" data-id="${d.id}" aria-label="Remove ${esc(d.name)}">×</button>
+        ${removeBtn("debts", d.id, d.name)}
       </div>`).join("") || `<p class="muted">No debts. The plan will put everything toward your buffer and spending.</p>`}
     </div>
-    <div style="margin-top:12px"><button class="btn primary" id="addDebt">+ Add debt</button></div>
+    <div style="margin-top:16px">${addBtn("addDebt","Add debt")}</div>
   </div>
   <div class="grid2">
     <div class="card"><header><h2>Payoff order</h2><span class="small muted" id="orderNote"></span></header>
       <div class="tscroll"><table><thead><tr><th>#</th><th>Debt</th><th class="n">Balance</th><th class="n">Rate</th><th class="n">Paid off</th></tr></thead><tbody id="orderRows"></tbody></table></div>
     </div>
     <div class="card"><header><h2>If it gets too much</h2></header>
-      <div class="sources" style="font-size:.9rem;color:var(--ink)">
+      <div class="help">
         <p>Free, confidential debt counselling (schuldbemiddeling) is available in Antwerp through the <b>OCMW / social service of the city</b> and the <b>CAW Antwerpen</b>. They can negotiate payment plans with creditors.</p>
         <p>If debts are structurally unpayable, a <b>collective debt settlement</b> (collectieve schuldenregeling) through the labour court freezes interest and sets one affordable monthly amount.</p>
         <p>Never take a new consumer credit or buy-now-pay-later plan to pay off another one. Check your registered credits for free at the National Bank's Central Individual Credit Register.</p>
@@ -812,6 +938,7 @@ function renderDerived(){
 function render(){
   const f = document.activeElement && document.activeElement.id;
   renderEditors(); renderDerived();
+  document.querySelectorAll("main input, main select").forEach(el => { el.setAttribute("autocomplete","off"); if(el.id && !el.name) el.name = el.id; });
   if(f){ const el = document.getElementById(f); if(el) el.focus(); }
 }
 
@@ -839,11 +966,11 @@ document.addEventListener("input", e => {
 document.addEventListener("change", e => { if(e.target.hasAttribute && e.target.hasAttribute("data-rerender")) render(); });
 document.addEventListener("click", e => {
   const b = e.target.closest("button"); if(!b) return;
-  if(b.dataset.tab){ tab = b.dataset.tab; try{ localStorage.setItem("ahb-tab", tab); }catch(err){} render(); return; }
+  if(b.dataset.tab){ tab = b.dataset.tab; try{ localStorage.setItem("ahb-tab", tab); history.replaceState(null, "", "#" + tab); }catch(err){} render(); return; }
   if(b.dataset.set){ S[b.dataset.set] = b.dataset.val; touch(); render(); return; }
   if(b.dataset.remove){
     const list = b.dataset.remove;
-    if(b.dataset.armed !== "1"){ b.dataset.armed = "1"; b.textContent = "Remove?"; b.style.fontSize = ".75rem"; setTimeout(()=>{ if(b.isConnected){ b.dataset.armed=""; b.textContent="×"; b.style.fontSize=""; } }, 3000); return; }
+    if(b.dataset.armed !== "1"){ b.dataset.armed = "1"; b.textContent = "Remove?"; setTimeout(()=>{ if(b.isConnected){ b.dataset.armed=""; b.innerHTML = ICON.trash; } }, 3000); return; }
     S[list] = S[list].filter(x => x.id !== b.dataset.id);
     if(list === "people"){ S.costs.forEach(c => { if(c.owner === b.dataset.id) c.owner = "shared"; }); S.debts.forEach(d => { if(d.owner === b.dataset.id) d.owner = "shared"; }); }
     touch(); render(); return;
@@ -858,6 +985,13 @@ document.addEventListener("click", e => {
       if(b.dataset.armed !== "1"){ b.dataset.armed = "1"; b.textContent = "Clear the example? Tap again"; return; }
       S = emptyState(); tab = "household"; scheduleSave(); render(); break;
   }
+});
+
+document.getElementById("tabs").addEventListener("keydown", e => {
+  if(e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const btns = [...document.querySelectorAll("#tabs button")], i = btns.findIndex(b => b.dataset.tab === tab);
+  const next = btns[(i + (e.key === "ArrowRight" ? 1 : btns.length - 1)) % btns.length];
+  e.preventDefault(); next.click(); next.focus();
 });
 
 /* ---------- Persistence: private per-person store, browser fallback ---------- */
